@@ -56,7 +56,7 @@ class classTagger():
     
     
     # Processing Tags
-    def tag_processing(self,pages,object_type_field,object_id_field,launch_time_field):
+    def tag_processing(self,pages,region,resource_type,object_type_field,object_id_field,launch_time_field):
         
         for account in self.configuration['Accounts']:
             self.authentication(account['id'])
@@ -75,9 +75,9 @@ class classTagger():
                 paginator = ec2_client.get_paginator('describe_snapshots')
                 page_iterator = paginator.paginate(OwnerIds=['self'])
             
-                item_with_tag = []
-                item_added_tag = []
-                item_skipped_tag = []
+                items_with_tag = []
+                items_added_tag = []
+                items_skipped_tag = []
             
                 for page in pages:
                     objects = page.get(object_type_field, [])
@@ -88,18 +88,18 @@ class classTagger():
                             # Check if the snapshot has the 'map-migrated' tag
                             has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
                             if has_map_migrated_tag:
-                                item_with_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                                items_with_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                             else:
-                                item_added_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                                items_added_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                                 # Add the 'map-migrated' tag to snapshots without it
                                 ec2_client.create_tags(Resources=[item[object_id_field]], Tags=[{'Key': self.tag_key, 'Value': self.tag_value}])
                         else:
-                            item_skipped_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            items_skipped_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                             
                     #Logging Tagging Resources
-                    self.logging({ "region" : region, "service" : "snapshot", "type" : "1", "resources" : item_with_tag })
-                    self.logging({ "region" : region, "service" : "snapshot", "type" : "2", "resources" : item_added_tag })
-                    self.logging({ "region" : region, "service" : "snapshot", "type" : "3", "resources" : item_skipped_tag })
+                    self.logging({ "region" : region, "service" : resource_type, "type" : "1", "resources" : items_with_tag })
+                    self.logging({ "region" : region, "service" : resource_type, "type" : "2", "resources" : items_added_tag })
+                    self.logging({ "region" : region, "service" : resource_type, "type" : "3", "resources" : items_skipped_tag })
 
         
         

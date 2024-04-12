@@ -145,7 +145,7 @@ Resources:
         DependsOn: IAMPolicyEc2
         Properties:
             Path: "/"
-            RoleName: !Join [ "-", ["role-ec2-map-tagger-solution", !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+            RoleName: "role-ec2-map-tagger-solution"
             AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
             MaxSessionDuration: 3600
             Description: "Allows EC2 instance to call AWS services on your behalf."
