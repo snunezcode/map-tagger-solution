@@ -50,7 +50,7 @@ class classDataStore {
                                                 order by 
                                                 a.process_id desc`;
                                                 
-        #sql_statement_tagger_process_details = "select *, case when type=1 then 'tagged' when type=2 then 'added' when type=3 then 'skipped' end as type_desc from tbTaggerRecords where process_id={process_id}";
+        #sql_statement_tagger_process_details = "select *, case when type=1 then 'tagged' when type=2 then 'added' when type=3 then 'skipped' end as type_desc from tbTaggerRecords where process_id = ?";
         
         #sql_statement_summary_resources = `select a.process_id, a.total_type_1 as total_resources_tagged, a.total_type_2 as total_resources_added, a.total_type_3 as total_resources_skipped
                                             from
@@ -146,8 +146,8 @@ class classDataStore {
         
         
         async getChildRecords(object){
-            var parameters = { process_id : object.process_id };
-            var command = await this.#connection.query(replaceParameterValues(this.#sql_statement_tagger_process_details,parameters));
+            var parameters = [object.process_id];
+            var command = await this.#connection.query(this.#sql_statement_tagger_process_details,parameters);
             return command[0];
         }
          

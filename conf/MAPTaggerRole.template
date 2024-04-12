@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MAP Tagger
+
+Parameters:
+  StartDate:
+    Description: Enter the date your MAP contract started (YYYY-MM-DD, e.g. 2022-10-31).
+    Type: String
+    Default: "YYYY-MM-DD"
+  TagValue:
+    Description: Enter your MAP tag value.
+    Type: String
+    Default: "MAP tag value goes here"
+
+Resources:
+
+    IAMRoleCognito:
+        Type: "AWS::IAM::Role"
+        Properties:
+            Path: "/"
+            RoleName: !Join [ "-", ["role-cognito-map-tagger-solution", !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+            AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cognito-idp.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+            MaxSessionDuration: 3600
+            Description: "Allows Cognito to use SMS MFA on your behalf."
+            Policies:
+            - PolicyName: "CognitoPolicy"
+              PolicyDocument: 
+                Version: "2012-10-17"
+                Statement: 
+                  - Effect: "Allow"
+                    Action:
+                      - "sns:publish"
+                    Resource: "*"
+                    
+                    
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Role: !GetAtt LambdaFunctionRole.Arn
+      Handler: index.lambda_handler
+      Timeout: 600
+      Description: "Lambda function to tag MAP resources"
+      FunctionName:
+        Fn::Join:
+          - "-"
+          - - MAP-Tagger
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+      Environment:
+        Variables:
+          tag_key: "map-migrated"
+          tag_value: !Ref TagValue
+          start_date: !Ref StartDate
+          region: !Ref "AWS::Region"
+      Code:
+        S3Bucket: map-tagger
+        S3Key: lambda-function.zip
+
+  LambdaFunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - "-"
+          - - "/aws/lambda/LambdaFunctionLogs"
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+
+  LambdaFunctionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName:
+            Fn::Join:
+              - "-"
+              - - LambdaFunction_Policy
+                - Fn::Select:
+                    - 4
+                    - Fn::Split:
+                        - "-"
+                        - Fn::Select:
+                            - 2
+                            - Fn::Split:
+                                - "/"
+                                - Ref: AWS::StackId
+          PolicyDocument:
+            Fn::Sub:
+              - |
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "apigateway:GET",
+                        "apigateway:PATCH",
+                        "apigateway:PUT",
+                        "apigateway:DELETE",
+                        "apigateway:POST",
+                        "backup:ListBackupVaults",
+                        "backup:ListBackupPlans",
+                        "backup:ListTags",
+                        "backup:TagResource",
+                        "dynamodb:ListTables",
+                        "dynamodb:Describe*",
+                        "dynamodb:TagResource",
+                        "dynamodb:ListTagsOfResource",
+                        "ec2:Describe*",
+                        "ec2:CreateTags",
+                        "ec2:DescribeVolumes",
+                        "ec2:DescribeSnapshots",
+                        "ec2:DescribeTransitGateways",
+                        "ec2:DescribeTransitGatewayAttachments",
+                        "ec2:DescribeTags",
+                        "ec2:CreateTags",
+                        "ecr:DescribeRepositories",
+                        "ecr:ListTagsForResource",
+                        "ecr:TagResource",
+                        "ecs:ListClusters",
+                        "ecs:DescribeClusters",
+                        "ecs:ListTagsForResource",
+                        "ecs:TagResource",
+                        "eks:ListClusters",
+                        "eks:ListTagsForResource",
+                        "eks:TagResource",
+                        "elasticfilesystem:Describe*",
+                        "elasticfilesystem:CreateTags",
+                        "elasticfilesystem:ListTagsForResource",
+                        "elasticloadbalancing:AddTags",
+                        "elasticloadbalancing:Describe*",
+                        "elasticmapreduce:DescribeCluster",
+                        "elasticmapreduce:ListClusters",
+                        "elasticmapreduce:AddTags",
+                        "fsx:TagResource",
+                        "fsx:DescribeFileSystems",
+                        "fsx:ListTagsForResource",
+                        "fsx:DescribeBackups",
+                        "lambda:List*",
+                        "lambda:Get*",
+                        "lambda:TagResource",
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents",
+                        "logs:DescribeLogGroups",
+                        "logs:DescribeLogStreams",
+                        "redshift:CreateTags",
+                        "redshift:Describe*",
+                        "rds:ListTagsForResource",
+                        "rds:Describe*",
+                        "rds:DescribeDBInstances",
+                        "rds:AddTagsToResource",
+                        "s3:Get*",
+                        "s3:List*",
+                        "s3:PutBucketTagging",
+                        "tag:Get*",
+                        "tag:TagResources",
+                        "transfer:ListServers",
+                        "transfer:ListTagsForResource",
+                        "transfer:TagResource",
+                        "workspaces:DescribeWorkspaces",
+                        "workspaces:CreateTags"
+                      ],
+                      "Resource": "*"
+                    }
+                  ]
+                }
+              - LambdaFunctionLogs: !GetAtt LambdaFunctionLogs.Arn
+                Region: !Sub ${AWS::Region}
+                AccountId: !Sub ${AWS::AccountId}
+
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Amazon EventBridge Rule that automates the execution of the AWS Lambda
+        function
+      EventBusName: default
+      Name:
+        Fn::Join:
+          - "-"
+          - - MAP-Tagger-daily-trigger
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+      ScheduleExpression: cron(0 6 * * ? *)
+      State: ENABLED
+      Targets:
+        - Id: LambdaFunctionTarget
+          Arn: !GetAtt LambdaFunction.Arn
+
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+
+Outputs:
+  TagKey:
+    Description: Tag key for MAP.
+    Value: "map-migrated"
+  TagValue:
+    Description: Tag value for MAP.
+    Value: !Ref TagValue
+  StartDate:
+    Description: Starting date of MAP.
+    Value: !Ref StartDate

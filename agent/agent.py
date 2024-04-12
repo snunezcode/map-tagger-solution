@@ -18,7 +18,7 @@ class classTagger():
         self.tag_value = ""
         self.start_date = ""
         self.filters = []
-        self.connection = pymysql.connect(db='db', user='root', passwd='pwd', unix_socket="/var/lib/mysql/mysql.sock")
+        self.connection = pymysql.connect(db='db',user='root', unix_socket="/var/lib/mysql/mysql.sock")
         self.cursor = self.connection.cursor()  
         self.configuration = {}
         self.initialize()
@@ -54,7 +54,55 @@ class classTagger():
             self.cursor.execute(sql, (self.process_id, self.account, record["region"], record["service"],record["type"],resource['name'],self.tag_key,self.tag_value, resource['created'],resource['tags'],datetime.now().strftime("%Y-%m-%d %H:%M:%S") ))
         self.connection.commit()
     
+    
+    # Processing Tags
+    def tag_processing(self,pages,object_type_field,object_id_field,launch_time_field):
+        
+        for account in self.configuration['Accounts']:
+            self.authentication(account['id'])
+        
+            for region in account['regions']:
+                ec2_client = boto3.client('ec2',
+                                            aws_access_key_id=self.aws_access_key_id,
+                                            aws_secret_access_key=self.aws_secret_access_key,
+                                            aws_session_token=self.aws_session_token,
+                                            region_name=region)
+                item_with_tag = []
+                item_added_tag = []
+                item_skipped_tag = []
+            
+                # Create a paginator for EBS snapshots
+                paginator = ec2_client.get_paginator('describe_snapshots')
+                page_iterator = paginator.paginate(OwnerIds=['self'])
+            
+                item_with_tag = []
+                item_added_tag = []
+                item_skipped_tag = []
+            
+                for page in pages:
+                    objects = page.get(object_type_field, [])
+                    for item in objects:
+                        create_time = item.get(launch_time_field)
+                        tags = item.get("Tags")  if "Tags" in item else []
+                        if create_time and create_time >= self.start_date:
+                            # Check if the snapshot has the 'map-migrated' tag
+                            has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
+                            if has_map_migrated_tag:
+                                item_with_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                item_added_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                                # Add the 'map-migrated' tag to snapshots without it
+                                ec2_client.create_tags(Resources=[item[object_id_field]], Tags=[{'Key': self.tag_key, 'Value': self.tag_value}])
+                        else:
+                            item_skipped_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            
+                    #Logging Tagging Resources
+                    self.logging({ "region" : region, "service" : "snapshot", "type" : "1", "resources" : item_with_tag })
+                    self.logging({ "region" : region, "service" : "snapshot", "type" : "2", "resources" : item_added_tag })
+                    self.logging({ "region" : region, "service" : "snapshot", "type" : "3", "resources" : item_skipped_tag })
 
+        
+        
 
     # Function to tag EC2 instances
     def tag_ec2_instances(self):
@@ -259,7 +307,7 @@ class classTagger():
 def main():
     
     # Start Tagging Process
-    tagger = classTagger()
+    tagger = classTagger({})
     tagger.tag_ec2_instances()
     tagger.tag_ebs_volumes()
     tagger.tag_ebs_snapshots()

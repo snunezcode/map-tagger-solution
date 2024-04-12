@@ -132,42 +132,10 @@ Resources:
                         {
                             "Effect": "Allow",
                             "Action": [
-                                "cloudwatch:GetMetricData"
+                                "sns:publish"
                             ],
                             "Resource": "*"
                         },
-                		{
-                			"Effect": "Allow",
-                			"Action": [
-                				"elasticmapreduce:ListInstances",
-                				"elasticmapreduce:ListSteps",
-                				"elasticmapreduce:DescribeCluster"
-                			],
-                			"Resource": "arn:aws:elasticmapreduce:*:${AWS::AccountId}:cluster/*"
-                		},
-                		{
-                			"Effect": "Allow",
-                			"Action": "elasticmapreduce:ListClusters",
-                			"Resource": "*"
-                		},
-                		{
-                			"Effect": "Allow",
-                			"Action": [
-                                "timestream:Select",
-                                "timestream:DescribeTable",
-                                "timestream:ListMeasures"
-                            ],
-                			"Resource": "arn:aws:timestream:*:${AWS::AccountId}:database/*/table/*"
-                		},
-                		{
-                            "Effect": "Allow",
-                            "Action": [
-                                "timestream:DescribeEndpoints",
-                                "timestream:SelectValues",
-                                "timestream:CancelQuery"
-                            ],
-                            "Resource": "*"
-                        }
                     ]
                 }
         
