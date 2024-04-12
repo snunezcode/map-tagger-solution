@@ -39,10 +39,6 @@ It aims to provide you with complete visibility into how your tags are applied t
 
 
 
-## Use cases
-
-    MAP Tagger Solution is powerful tool to automatically manage tags to help better manage your AWS resources needed by Migration Accelaration Program.
-
 ## Resource Usage and Cost
 
 MAP Tagger Solution will use following resources:
