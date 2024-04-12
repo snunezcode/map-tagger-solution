@@ -1,3 +1,14 @@
+conf/run.sh
+conf/run-public.sh
+conf/sync-int.sh
+demo/
+frontend/node_modules/
+frontend/public/aws-exports.json
+server/node_modules/
+server/aws-exports.json
+test/
+frontend/package-lock.json
+server/package-lock.json
 # Logs
 logs
 *.log

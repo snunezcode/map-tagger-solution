@@ -1,0 +1,21 @@
+{
+    "TagKey": "MapKey",
+    "TagValue": "MapValue",
+    "MapDate": "2022-11-10",
+    "Accounts": [
+        {
+            "id": "039783469744",
+            "regions": [
+                "us-east-1",
+                "us-west-2"
+            ]
+        },
+        {
+            "id": "568994528172",
+            "regions": [
+                "us-east-1",
+                "us-west-2"
+            ]
+        }
+    ]
+}
