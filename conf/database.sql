@@ -1,6 +1,3 @@
-
-//-- DDL Section
-
 CREATE DATABASE db;
  
 USE db;

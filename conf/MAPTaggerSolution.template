@@ -135,7 +135,7 @@ Resources:
                                 "sns:publish"
                             ],
                             "Resource": "*"
-                        },
+                        }
                     ]
                 }
         

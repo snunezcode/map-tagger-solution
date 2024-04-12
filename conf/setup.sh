@@ -5,8 +5,13 @@ version="$(curl https://version.code.ds.wwcs.aws.dev/?codeId=maptagger'&'moduleI
 #Install Software Packages
 # Bug : https://github.com/amazonlinux/amazon-linux-2023/issues/397
 while true; do
-    echo "Trying to install rpm packages ..."
+    echo "Trying to install app rpm packages ..."
     sudo yum install -y openssl nginx && break
+done
+
+while true; do
+    echo "Trying to install db rpm packages ..."
+    sudo dnf install mariadb105-server -y && break
 done
 
 
@@ -51,3 +56,11 @@ cd /aws/apps/frontend/; npm install; npm run build;
 
 #Copy build content to www folder
 cp -r /aws/apps/frontend/build/* /aws/apps/frontend/www/
+
+
+#Configure database
+sudo sh -c 'echo -e "\n[mysqld]\nskip-grant-tables\nskip-networking" >> /etc/my.cnf'
+sudo systemctl start mariadb
+sudo chkconfig mariadb on
+cd /aws/apps/conf/; mysql --socket=/var/lib/mysql/mysql.sock < database.sql
+
