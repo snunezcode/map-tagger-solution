@@ -9,7 +9,7 @@ class classTaggerProcess {
 
         logging = [];
         status = "non-started"
-        scriptCommand = "sudo -u ec2-user python3 /aws/apps/agent/agent.py"
+        scriptCommand = "sudo -u ec2-user python3.11 /aws/apps/agent/agent.py"
         constructor(object) { 
             
         }

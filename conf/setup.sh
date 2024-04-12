@@ -15,6 +15,17 @@ while true; do
 done
 
 
+while true; do
+    echo "Trying to install app rpm packages ..."
+    sudo yum install -y python3.11-pip && break
+done
+
+#Configure Agent Libraries
+pip3.11 install boto3
+pip3.11 install pymysql
+ 
+
+
 #Create Certificates
 sudo mkdir /etc/nginx/ssl/
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt -subj "/C=US/ST=US/L=US/O=Global Security/OU=IT Department/CN=127.0.0.1"
