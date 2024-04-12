@@ -379,58 +379,7 @@ Resources:
               - 
                 Name: "email"
                 Value: !Ref Username
-                
     
-    TimestreamDatabase:
-        Type: "AWS::Timestream::Database"
-        Properties:
-            DatabaseName: "emrdb"
-
-    TimestreamTable:
-        Type: "AWS::Timestream::Table"
-        Properties:
-            DatabaseName: !Ref TimestreamDatabase
-            TableName: "cpu"
-            RetentionProperties: 
-                MemoryStoreRetentionPeriodInHours: 24
-                MagneticStoreRetentionPeriodInDays: 365
-
-    TimestreamTable2:
-        Type: "AWS::Timestream::Table"
-        Properties:
-            DatabaseName: !Ref TimestreamDatabase
-            TableName: "disk"
-            RetentionProperties: 
-                MemoryStoreRetentionPeriodInHours: 24
-                MagneticStoreRetentionPeriodInDays: 365
-
-    TimestreamTable3:
-        Type: "AWS::Timestream::Table"
-        Properties:
-            DatabaseName: !Ref TimestreamDatabase
-            TableName: "memory"
-            RetentionProperties: 
-                MemoryStoreRetentionPeriodInHours: 24
-                MagneticStoreRetentionPeriodInDays: 365
-
-    TimestreamTable4:
-        Type: "AWS::Timestream::Table"
-        Properties:
-            DatabaseName: !Ref TimestreamDatabase
-            TableName: "network"
-            RetentionProperties: 
-                MemoryStoreRetentionPeriodInHours: 24
-                MagneticStoreRetentionPeriodInDays: 365
-
-    TimestreamTable5:
-        Type: "AWS::Timestream::Table"
-        Properties:
-            DatabaseName: !Ref TimestreamDatabase
-            TableName: "hadoop"
-            RetentionProperties: 
-                MemoryStoreRetentionPeriodInHours: 24
-                MagneticStoreRetentionPeriodInDays: 365
-
 Outputs:
     PublicAppURL:
         Description: Public Endpoint
