@@ -1,5 +1,5 @@
 #Load Profile
-version="$(curl https://version.code.ds.wwcs.aws.dev/?codeId=datop'&'moduleId=update)"
+version="$(curl https://version.code.ds.wwcs.aws.dev/?codeId=map-tagger'&'moduleId=update)"
 source $HOME/.bash_profile
 
 #Clone Repository
@@ -7,7 +7,7 @@ cd /tmp
 sudo rm -rf map-tagger-solution
 git clone https://github.com/GitHubRepository/map-tagger-solution.git
 cd map-tagger-solution
-sudo cp -r server frontend /aws/apps
+sudo cp -r server frontend agent /aws/apps
 
 #React Application Installation
 cd /aws/apps/frontend/; npm install; npm run build;

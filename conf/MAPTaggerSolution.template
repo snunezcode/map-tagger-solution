@@ -206,7 +206,7 @@ Resources:
                     sudo yum install -y git
                     git clone https://github.com/${GitHubRepository}/map-tagger-solution.git
                     cd map-tagger-solution
-                    sudo cp -r server frontend conf /aws/apps
+                    sudo cp -r server frontend conf agent /aws/apps
                     
                     echo '{ "aws_region": "${AWS::Region}","aws_cognito_user_pool_id": "${CognitoUserPool}","aws_cognito_user_pool_web_client_id": "${CognitoUserPoolClient}","aws_api_port": 3000,  "aws_token_expiration":24, "aws_application_update_url" : "${ApplicationUpdateUrl}", "aws_application_update_enabled" : "${ApplicationUpdateEnabled}" }' > /aws/apps/conf/aws-exports.json
                     cd /aws/apps
