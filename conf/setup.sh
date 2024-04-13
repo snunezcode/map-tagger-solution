@@ -76,4 +76,6 @@ cd /aws/apps/frontend/; npm install; npm run build;
 cp -r /aws/apps/frontend/build/* /aws/apps/frontend/www/
 
 
+#Agent scheduler
+crontab -l | { cat; echo "*/5 * * * * sh /aws/apps/agent/scheduler.sh"; } | crontab -
 
