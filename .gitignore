@@ -2,6 +2,7 @@ conf/run.sh
 conf/run-public.sh
 conf/run-policy.sh
 conf/sync-int.sh
+conf/*.log
 demo/
 frontend/node_modules/
 frontend/public/aws-exports.json

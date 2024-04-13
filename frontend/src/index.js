@@ -19,6 +19,7 @@ import Logout from "./pages/Logout";
 import SmDashbaord01 from "./pages/Sm-dashboard-01";
 import SmSettings01 from "./pages/Sm-settings-01";
 import SmAppUpdate from "./pages/Sm-appUpdate";
+import SmAppLogging from "./pages/Sm-appLogging";
 
 
 //-- Components
@@ -27,7 +28,7 @@ import ProtectedApp from "./components/ProtectedApp";
 import { applyMode,  Mode } from '@cloudscape-design/global-styles';
 
 if (localStorage.getItem("themeMode") === null ){
-    localStorage.setItem("themeMode", "dark");
+    localStorage.setItem("themeMode", "light");
 }
 
 if (localStorage.getItem("themeMode") == "dark")
@@ -61,6 +62,7 @@ Axios.get(`/aws-exports.json`,).then((data)=>{
                     <Route path="/authentication" element={<Authentication />} />
                     <Route path="/logout" element={<ProtectedApp><Logout /> </ProtectedApp>} />
                     <Route path="/updates" element={<ProtectedApp><SmAppUpdate /> </ProtectedApp>} />
+                    <Route path="/logging/" element={<ProtectedApp><SmAppLogging /> </ProtectedApp>} />
                 </Routes>
               </BrowserRouter>
           </Authenticator.Provider>

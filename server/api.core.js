@@ -366,6 +366,51 @@ app.get("/api/aws/tagger/configuration/save", async (req, res) => {
     
 });
 
+
+
+//--++ API : GENERAL : Tagger Process - List log files
+app.get("/api/aws/tagger/logging/list/files", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+    
+    try {
+        
+        var logFiles = taggerProcessObject.getLoggingFiles();
+        res.status(200).send({ csrfToken: req.csrfToken(), logFiles : logFiles } )
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({});
+    }
+});
+
+
+//--++ API : GENERAL : Tagger Process - Get logfile content
+app.get("/api/aws/tagger/logging/get/content", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+    
+    const params = req.query;
+    
+    try {
+        
+        var logContent = taggerProcessObject.getLogfileContent(params.fileName);
+        res.status(200).send({ csrfToken: req.csrfToken(), logContent : logContent } );
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({});
+    }
+});
+
 //--################################################################################################################
 //--------------------------------------------  CORE
 //--################################################################################################################

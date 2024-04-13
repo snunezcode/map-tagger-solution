@@ -279,7 +279,6 @@ class classTagger():
                     for rds_instance in db_instances:
                         create_time = rds_instance.get("InstanceCreateTime")
                         rds_tags = rds_client.list_tags_for_resource(ResourceName=rds_instance['DBInstanceArn'])['TagList']
-                        print(rds_tags)
                         if create_time and create_time >= self.start_date:
                             # Check if the instance already has the specified tag
                             has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in rds_tags)

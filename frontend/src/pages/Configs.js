@@ -36,6 +36,7 @@ export const SideMainLayoutMenu = [
       items: [
           { type: "link", text: "Dashboard", href: "/dashboard/" },
           { type: "link", text: "Settings", href: "/settings/" },
+          { type: "link", text: "Logging", href: "/logging/" },
       ],
     },
     { type: "divider" },
