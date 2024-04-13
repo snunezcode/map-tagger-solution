@@ -1,4 +1,7 @@
 #!/bin/bash
+
+cd /aws/apps/
+
 #Verify code version
 version="$(curl https://version.code.ds.wwcs.aws.dev/?codeId=maptagger'&'moduleId=deploy)"
 
@@ -6,7 +9,7 @@ version="$(curl https://version.code.ds.wwcs.aws.dev/?codeId=maptagger'&'moduleI
 # Bug : https://github.com/amazonlinux/amazon-linux-2023/issues/397
 while true; do
     echo "Trying to install app rpm packages ..."
-    sudo yum install -y openssl nginx && break
+    sudo yum install -y openssl nginx cronie && break
 done
 
 while true; do
@@ -16,7 +19,7 @@ done
 
 
 while true; do
-    echo "Trying to install app rpm packages ..."
+    echo "Trying to install agent rpm packages ..."
     sudo yum install -y python3.11-pip && break
 done
 
@@ -44,6 +47,7 @@ sudo cp conf/server.conf /etc/nginx/conf.d/
 #Enable Auto-Start
 sudo chkconfig nginx on
 sudo chkconfig api.core on
+sudo chkconfig crond on
 
 #Change permissions
 sudo chown -R ec2-user:ec2-user /aws/apps
@@ -77,5 +81,6 @@ cp -r /aws/apps/frontend/build/* /aws/apps/frontend/www/
 
 
 #Agent scheduler
+sudo service crond restart
 crontab -l | { cat; echo "*/5 * * * * sh /aws/apps/agent/scheduler.sh"; } | crontab -
 
