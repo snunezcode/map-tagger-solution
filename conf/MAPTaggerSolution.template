@@ -116,7 +116,8 @@ Resources:
     InstanceProfile: 
         Type: "AWS::IAM::InstanceProfile"
         DependsOn: IAMRoleEC2
-        Properties: 
+        Properties:
+          InstanceProfileName : "role-ec2-map-tagger-solution"
           Path: "/"
           Roles:  [!Ref IAMRoleEC2]
           
