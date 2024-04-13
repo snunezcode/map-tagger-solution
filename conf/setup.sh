@@ -1,6 +1,5 @@
 #!/bin/bash
 
-cd /aws/apps/
 
 #Verify code version
 version="$(curl https://version.code.ds.wwcs.aws.dev/?codeId=maptagger'&'moduleId=deploy)"
@@ -41,8 +40,8 @@ sudo mkdir /etc/nginx/ssl/
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt -subj "/C=US/ST=US/L=US/O=Global Security/OU=IT Department/CN=127.0.0.1"
 
 #Copy Configurations
-sudo cp conf/api.core.service /usr/lib/systemd/system/api.core.service
-sudo cp conf/server.conf /etc/nginx/conf.d/
+sudo cp /aws/apps/conf/api.core.service /usr/lib/systemd/system/api.core.service
+sudo cp /aws/apps/conf/server.conf /etc/nginx/conf.d/
 
 #Enable Auto-Start
 sudo chkconfig nginx on
@@ -82,5 +81,5 @@ cp -r /aws/apps/frontend/build/* /aws/apps/frontend/www/
 
 #Agent scheduler
 sudo service crond restart
-crontab -l | { cat; echo "*/5 * * * * sh /aws/apps/agent/scheduler.sh"; } | crontab -
+crontab -l | { cat; echo "*/5 * * * * sh /aws/apps/agent/run.sh"; } | crontab -
 
