@@ -164,7 +164,7 @@ function Application() {
                                            { ( updateStatus['status'] == 'in-progress' )  &&
                                                 <Spinner size="big" />
                                             }
-                                            Application Updates
+                                            Application Update
                                           </Header>
                                       } 
                       >

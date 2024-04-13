@@ -82,6 +82,7 @@ function Application() {
                     if (logFiles.length > 0) {
                         setSelectedOption(logFiles[0]);
                         logFileName.current=logFiles[0].value;
+                        gatherLogFileContent();
                     }
                          
                                                     
@@ -100,7 +101,7 @@ function Application() {
     
     }
     
-    function onClickViewLogFile(){
+    function gatherLogFileContent(){
       
         try {
         
@@ -178,12 +179,14 @@ function Application() {
                                                   onChange={({ detail }) =>{
                                                         setSelectedOption(detail.selectedOption);
                                                         logFileName.current=detail.selectedOption.value;
+                                                        gatherLogFileContent();
                                                     }
                                                   }
                                                   options={logFilesList}
                                                   filteringType="auto"
                                           />
-                                          <Button variant="primary" onClick={ onClickViewLogFile }>View Logfile</Button>
+                                          <Button variant="primary" onClick={ gatherLogFileContent }>View Logfile</Button>
+                                          <Button variant="primary" onClick={ gatherApplicationLogfiles }>Refresh</Button>
                                         </SpaceBetween>
                                 }
                                 
