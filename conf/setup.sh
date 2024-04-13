@@ -25,6 +25,13 @@ pip3.11 install boto3
 pip3.11 install pymysql
  
 
+#Configure database
+sudo sh -c 'echo -e "\n[mysqld]\nskip-grant-tables\nskip-networking" >> /etc/my.cnf'
+sudo systemctl start mariadb
+sudo chkconfig mariadb on
+cd /aws/apps/conf/; mysql --socket=/var/lib/mysql/mysql.sock < database.sql
+
+
 
 #Create Certificates
 sudo mkdir /etc/nginx/ssl/
@@ -69,9 +76,4 @@ cd /aws/apps/frontend/; npm install; npm run build;
 cp -r /aws/apps/frontend/build/* /aws/apps/frontend/www/
 
 
-#Configure database
-sudo sh -c 'echo -e "\n[mysqld]\nskip-grant-tables\nskip-networking" >> /etc/my.cnf'
-sudo systemctl start mariadb
-sudo chkconfig mariadb on
-cd /aws/apps/conf/; mysql --socket=/var/lib/mysql/mysql.sock < database.sql
 
