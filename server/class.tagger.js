@@ -69,8 +69,7 @@ class classTaggerProcess {
         getLogfileContent(fileName){
             var logContent = [];
             try {
-                logContent = fs.readFileSync(this.applicationDirectory + fileName, 'utf8').split('\n');;
-                console.log(logContent);
+                logContent = fs.readFileSync(this.applicationDirectory + fileName, 'utf8').split('\n');
             } catch (err) {
                 console.error(err);
             }
