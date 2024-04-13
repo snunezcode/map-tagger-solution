@@ -6,7 +6,7 @@ export const configuration =
         "refresh-interval": 5*1000,
         "api-url": "",
         "release" : "0.1.0",
-        "application-title": "MAP Tagger Solution for AWS Migration Accelaration Program",
+        "application-title": "MAP Tagger Solution",
         "version-code-url" : "https://version.code.ds.wwcs.aws.dev/",
         "convert-Gbps-Bytesps" : 125000000,
         "refresh-interval-emr-cluster" : 5*1000
