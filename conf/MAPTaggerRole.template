@@ -1,114 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: MAP Tagger
-
+Description: "MAP Tagger Solution - Cross Account Role"
 Parameters:
-  StartDate:
-    Description: Enter the date your MAP contract started (YYYY-MM-DD, e.g. 2022-10-31).
-    Type: String
-    Default: "YYYY-MM-DD"
-  TagValue:
-    Description: Enter your MAP tag value.
-    Type: String
-    Default: "MAP tag value goes here"
-
+  RoleARN:
+      Type: String
+      Description: IAM ARN Role for Central Account
+      
+  
 Resources:
-
-    IAMRoleCognito:
-        Type: "AWS::IAM::Role"
+    IAMPolicyMapTaggerSolution:
+        Type: AWS::IAM::ManagedPolicy
         Properties:
-            Path: "/"
-            RoleName: !Join [ "-", ["role-cognito-map-tagger-solution", !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
-            AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cognito-idp.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
-            MaxSessionDuration: 3600
-            Description: "Allows Cognito to use SMS MFA on your behalf."
-            Policies:
-            - PolicyName: "CognitoPolicy"
-              PolicyDocument: 
-                Version: "2012-10-17"
-                Statement: 
-                  - Effect: "Allow"
-                    Action:
-                      - "sns:publish"
-                    Resource: "*"
-                    
-                    
-  LambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Runtime: python3.11
-      Role: !GetAtt LambdaFunctionRole.Arn
-      Handler: index.lambda_handler
-      Timeout: 600
-      Description: "Lambda function to tag MAP resources"
-      FunctionName:
-        Fn::Join:
-          - "-"
-          - - MAP-Tagger
-            - Fn::Select:
-                - 4
-                - Fn::Split:
-                    - "-"
-                    - Fn::Select:
-                        - 2
-                        - Fn::Split:
-                            - "/"
-                            - Ref: AWS::StackId
-      Environment:
-        Variables:
-          tag_key: "map-migrated"
-          tag_value: !Ref TagValue
-          start_date: !Ref StartDate
-          region: !Ref "AWS::Region"
-      Code:
-        S3Bucket: map-tagger
-        S3Key: lambda-function.zip
-
-  LambdaFunctionLogs:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName:
-        Fn::Join:
-          - "-"
-          - - "/aws/lambda/LambdaFunctionLogs"
-            - Fn::Select:
-                - 4
-                - Fn::Split:
-                    - "-"
-                    - Fn::Select:
-                        - 2
-                        - Fn::Split:
-                            - "/"
-                            - Ref: AWS::StackId
-
-  LambdaFunctionRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Policies:
-        - PolicyName:
-            Fn::Join:
-              - "-"
-              - - LambdaFunction_Policy
-                - Fn::Select:
-                    - 4
-                    - Fn::Split:
-                        - "-"
-                        - Fn::Select:
-                            - 2
-                            - Fn::Split:
-                                - "/"
-                                - Ref: AWS::StackId
-          PolicyDocument:
-            Fn::Sub:
-              - |
+            ManagedPolicyName: !Join [ "-", ["policy-map-tagger-solution", !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+            PolicyDocument: !Sub |
                 {
                   "Version": "2012-10-17",
                   "Statement": [
@@ -187,51 +90,41 @@ Resources:
                     }
                   ]
                 }
-              - LambdaFunctionLogs: !GetAtt LambdaFunctionLogs.Arn
-                Region: !Sub ${AWS::Region}
-                AccountId: !Sub ${AWS::AccountId}
-
-  EventBridgeRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Description: Amazon EventBridge Rule that automates the execution of the AWS Lambda
-        function
-      EventBusName: default
-      Name:
-        Fn::Join:
-          - "-"
-          - - MAP-Tagger-daily-trigger
-            - Fn::Select:
-                - 4
-                - Fn::Split:
-                    - "-"
-                    - Fn::Select:
-                        - 2
-                        - Fn::Split:
-                            - "/"
-                            - Ref: AWS::StackId
-      ScheduleExpression: cron(0 6 * * ? *)
-      State: ENABLED
-      Targets:
-        - Id: LambdaFunctionTarget
-          Arn: !GetAtt LambdaFunction.Arn
-
-  PermissionForEventsToInvokeLambda:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt LambdaFunction.Arn
-      Action: 'lambda:InvokeFunction'
-      Principal: 'events.amazonaws.com'
-      SourceArn: !GetAtt EventBridgeRule.Arn
-
-
-Outputs:
-  TagKey:
-    Description: Tag key for MAP.
-    Value: "map-migrated"
-  TagValue:
-    Description: Tag value for MAP.
-    Value: !Ref TagValue
-  StartDate:
-    Description: Starting date of MAP.
-    Value: !Ref StartDate
+                
+    IAMRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            Path: "/"
+            RoleName: "MAPTaggingProcessRole1"
+            AssumeRolePolicyDocument: !Sub |
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "arn:aws:iam::039783469744:role/role-ec2-aws-showtime-labs"
+                            },
+                            "Action": "sts:AssumeRole"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "${RoleARN}"
+                            },
+                            "Action": "sts:AssumeRole"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "arn:aws:iam::039783469744:role/role_test"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                }
+            MaxSessionDuration: 3600
+            ManagedPolicyArns:
+                - !Ref IAMPolicyMapTaggerSolution
+    
+    

@@ -361,4 +361,7 @@ Outputs:
     PrivateAppURL:
         Description: Private Endpoint
         Value: !Join [ "", ["https://", !GetAtt EC2Instance.PrivateIp]]
+    RoleARN:
+        Description: RoleARN
+        Value: !GetAtt IAMRoleEC2.Arn
 
