@@ -25,6 +25,13 @@ class classTagger():
         self.initialize()
 
     def initialize(self):
+        
+        self.process_id = datetime.now().strftime("%Y%m%d%H%M%S")
+        
+        time_format = "%Y-%m-%d %H:%M:%S"
+        formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt=time_format)
+        logging.basicConfig(filename=f'{self.process_id}.log',format='%(asctime)s %(levelname)s : %(message)s', level=logging.INFO)
+    
         logging.info(f'Initialization...')
         file = open('../server/configuration.json')
         self.configuration = json.load(file)
@@ -33,7 +40,7 @@ class classTagger():
         self.tag_value = self.configuration["TagValue"]
         self.start_date = datetime.strptime(self.configuration["MapDate"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
         self.filters = [{'Name': f'tag:{self.tag_key}', 'Values': [self.tag_value]}]
-        self.process_id = datetime.now().strftime("%Y%m%d%H%M%S")
+        
         
         
     def authentication(self,account):
@@ -59,6 +66,7 @@ class classTagger():
     
     # Start Process
     def start_process(self):
+        logging.info(f'Starting Process...')
         for account in self.configuration['Accounts']:
             logging.info(f'Processing Account : {account}')
             self.authentication(account['id'])
@@ -67,6 +75,7 @@ class classTagger():
                 self.tag_ebs_volumes(region)    
                 self.tag_ebs_snapshots(region)
                 self.tag_rds_instances(region)
+        logging.info(f'Process Completed.')
         
         
 
@@ -265,10 +274,6 @@ class classTagger():
 
 # Main Function
 def main():
-    time_format = "%Y-%m-%d %H:%M:%S"
-    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt=time_format)
-    logging.basicConfig(format='%(asctime)s %(levelname)s : %(message)s', level=logging.INFO)
-    
     
     # Start Tagging Process
     tagger = classTagger({})
