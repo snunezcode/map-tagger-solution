@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import botocore
 import pymysql.cursors
 import json
+import logging
 
 class classTagger():
     
@@ -24,6 +25,7 @@ class classTagger():
         self.initialize()
 
     def initialize(self):
+        logging.info(f'Initialization...')
         file = open('../server/configuration.json')
         self.configuration = json.load(file)
         file.close()
@@ -55,262 +57,222 @@ class classTagger():
         self.connection.commit()
     
     
-    # Processing Tags
-    def tag_processing(self,pages,region,resource_type,object_type_field,object_id_field,launch_time_field):
-        
+    # Start Process
+    def start_process(self):
         for account in self.configuration['Accounts']:
+            logging.info(f'Processing Account : {account}')
             self.authentication(account['id'])
-        
             for region in account['regions']:
-                ec2_client = boto3.client('ec2',
-                                            aws_access_key_id=self.aws_access_key_id,
-                                            aws_secret_access_key=self.aws_secret_access_key,
-                                            aws_session_token=self.aws_session_token,
-                                            region_name=region)
-                item_with_tag = []
-                item_added_tag = []
-                item_skipped_tag = []
-            
-                # Create a paginator for EBS snapshots
-                paginator = ec2_client.get_paginator('describe_snapshots')
-                page_iterator = paginator.paginate(OwnerIds=['self'])
-            
-                items_with_tag = []
-                items_added_tag = []
-                items_skipped_tag = []
-            
-                for page in pages:
-                    objects = page.get(object_type_field, [])
-                    for item in objects:
-                        create_time = item.get(launch_time_field)
-                        tags = item.get("Tags")  if "Tags" in item else []
-                        if create_time and create_time >= self.start_date:
-                            # Check if the snapshot has the 'map-migrated' tag
-                            has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
-                            if has_map_migrated_tag:
-                                items_with_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                items_added_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                                # Add the 'map-migrated' tag to snapshots without it
-                                ec2_client.create_tags(Resources=[item[object_id_field]], Tags=[{'Key': self.tag_key, 'Value': self.tag_value}])
-                        else:
-                            items_skipped_tag.append({ "name" : item[object_id_field], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            
-                    #Logging Tagging Resources
-                    self.logging({ "region" : region, "service" : resource_type, "type" : "1", "resources" : items_with_tag })
-                    self.logging({ "region" : region, "service" : resource_type, "type" : "2", "resources" : items_added_tag })
-                    self.logging({ "region" : region, "service" : resource_type, "type" : "3", "resources" : items_skipped_tag })
-
+                self.tag_ec2_instances(region)    
+                self.tag_ebs_volumes(region)    
+                self.tag_ebs_snapshots(region)
+                self.tag_rds_instances(region)
         
         
 
     # Function to tag EC2 instances
-    def tag_ec2_instances(self):
+    def tag_ec2_instances(self,region):
+        try:
+            logging.info(f'Region : {region}, Service : {"EC2"}')
+            ec2_client = boto3.client('ec2',
+                                    aws_access_key_id=self.aws_access_key_id,
+                                    aws_secret_access_key=self.aws_secret_access_key,
+                                    aws_session_token=self.aws_session_token,
+                                    region_name=region)
+            paginator = ec2_client.get_paginator('describe_instances')
         
-        for account in self.configuration['Accounts']:
-            self.authentication(account['id'])
+            instances_with_tag = []
+            instances_without_tag = []
+            instances_skipped_tag = []
         
-            for region in account['regions']:
-                ec2_client = boto3.client('ec2',
-                                        aws_access_key_id=self.aws_access_key_id,
-                                        aws_secret_access_key=self.aws_secret_access_key,
-                                        aws_session_token=self.aws_session_token,
-                                        region_name=region)
-                paginator = ec2_client.get_paginator('describe_instances')
-            
-                instances_with_tag = []
-                instances_without_tag = []
-                instances_skipped_tag = []
-            
-                # Iterate through pages of results
-                for page in paginator.paginate(Filters=self.filters):
-                    for reservation in page.get('Reservations', []):
-                        for instance in reservation.get('Instances', []):
-                            create_time = instance.get("LaunchTime")
-                            tags = instance.get("Tags") if "Tags" in instance else [],
-                            if create_time and create_time >= self.start_date:
-                                ec2instance = instance.get("InstanceId")
-                                instances_with_tag.append({ "name" : ec2instance, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-            
-                # Now, use the same paginator to retrieve all instances (without filtering by tag)
-                for page in paginator.paginate():
-                    for reservation in page.get('Reservations', []):
-                        for instance in reservation.get('Instances', []):
-                            create_time = instance.get("LaunchTime")
+            # Iterate through pages of results
+            for page in paginator.paginate(Filters=self.filters):
+                for reservation in page.get('Reservations', []):
+                    for instance in reservation.get('Instances', []):
+                        create_time = instance.get("LaunchTime")
+                        tags = instance.get("Tags") if "Tags" in instance else [],
+                        if create_time and create_time >= self.start_date:
                             ec2instance = instance.get("InstanceId")
-                            tags = instance.get("Tags")  if "Tags" in instance else [],
-                            if create_time and create_time >= self.start_date:
-                                if not any(d['name'] == ec2instance for d in instances_with_tag):
-                                    instances_without_tag.append({ "name" : ec2instance, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                                    ec2_client.create_tags(
-                                        Resources=[ec2instance],
-                                        Tags=[
-                                            {'Key': self.tag_key, 'Value': self.tag_value}
-                                        ]
-                                    )
-                            else:
-                                instances_skipped_tag.append({ "name" : ec2instance, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-            
-                #Logging Tagging Resources
-                self.logging({ "region" : region, "service" : "ec2", "type" : "1", "resources" : instances_with_tag })
-                self.logging({ "region" : region, "service" : "ec2", "type" : "2", "resources" : instances_without_tag })
-                self.logging({ "region" : region, "service" : "ec2", "type" : "3", "resources" : instances_skipped_tag })
-
-
-
-    # Function to tag EBS volumes
-    def tag_ebs_volumes(self):
+                            instances_with_tag.append({ "name" : ec2instance, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
         
-        for account in self.configuration['Accounts']:
-            self.authentication(account['id'])
-        
-            for region in account['regions']:
-                ec2_client = boto3.client('ec2',
-                                            aws_access_key_id=self.aws_access_key_id,
-                                            aws_secret_access_key=self.aws_secret_access_key,
-                                            aws_session_token=self.aws_session_token,
-                                            region_name=region)
-                paginator = ec2_client.get_paginator('describe_volumes')
-            
-                volumes_with_tag = []
-                volumes_added_tag = []
-                volumes_skipped_tag = []
-            
-                # Iterate through pages of results
-                for page in paginator.paginate(Filters=self.filters):
-                    for volume in page.get('Volumes', []):
-                        create_time = volume.get("CreateTime")
-                        tags = volume.get("Tags")  if "Tags" in volume else [],
+            # Now, use the same paginator to retrieve all instances (without filtering by tag)
+            for page in paginator.paginate():
+                for reservation in page.get('Reservations', []):
+                    for instance in reservation.get('Instances', []):
+                        create_time = instance.get("LaunchTime")
+                        ec2instance = instance.get("InstanceId")
+                        tags = instance.get("Tags")  if "Tags" in instance else [],
                         if create_time and create_time >= self.start_date:
-                            volumes_with_tag.append({ "name" : volume['VolumeId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags)  })
-            
-                # Now, use the same paginator to retrieve all volumes (without filtering by tag)
-                for page in paginator.paginate():
-                    for volume in page.get('Volumes', []):
-                        create_time = volume.get("CreateTime")
-                        volume_id = volume['VolumeId']
-                        tags = volume.get("Tags")  if "Tags" in volume else [],
-                        if create_time and create_time >= self.start_date:
-                            #if volume_id not in volumes_with_tag:
-                            if not any(d['name'] == volume_id for d in volumes_with_tag):
-                                volumes_added_tag.append({ "name" : volume_id, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            if not any(d['name'] == ec2instance for d in instances_with_tag):
+                                instances_without_tag.append({ "name" : ec2instance, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                                 ec2_client.create_tags(
-                                    Resources=[volume_id],
+                                    Resources=[ec2instance],
                                     Tags=[
                                         {'Key': self.tag_key, 'Value': self.tag_value}
                                     ]
                                 )
-                                print("Tagged volume:", volume_id)
                         else:
-                            volumes_skipped_tag.append({ "name" : volume_id, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                
-                #Logging Tagging Resources
-                self.logging({ "region" : region, "service" : "ebs", "type" : "1", "resources" : volumes_with_tag })
-                self.logging({ "region" : region, "service" : "ebs", "type" : "2", "resources" : volumes_added_tag })
-                self.logging({ "region" : region, "service" : "ebs", "type" : "3", "resources" : volumes_skipped_tag })
+                            instances_skipped_tag.append({ "name" : ec2instance, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+        
+            #Logging Tagging Resources
+            self.logging({ "region" : region, "service" : "ec2", "type" : "1", "resources" : instances_with_tag })
+            self.logging({ "region" : region, "service" : "ec2", "type" : "2", "resources" : instances_without_tag })
+            self.logging({ "region" : region, "service" : "ec2", "type" : "3", "resources" : instances_skipped_tag })
+        except Exception as err:
+            logging.error(f'Region : {err}')
+
+
+
+    # Function to tag EBS volumes
+    def tag_ebs_volumes(self,region):
+        try:
+            logging.info(f'Region : {region}, Service : {"EBS"}')
+            ec2_client = boto3.client('ec2',
+                                        aws_access_key_id=self.aws_access_key_id,
+                                        aws_secret_access_key=self.aws_secret_access_key,
+                                        aws_session_token=self.aws_session_token,
+                                        region_name=region)
+            paginator = ec2_client.get_paginator('describe_volumes')
+        
+            volumes_with_tag = []
+            volumes_added_tag = []
+            volumes_skipped_tag = []
+        
+            # Iterate through pages of results
+            for page in paginator.paginate(Filters=self.filters):
+                for volume in page.get('Volumes', []):
+                    create_time = volume.get("CreateTime")
+                    tags = volume.get("Tags")  if "Tags" in volume else [],
+                    if create_time and create_time >= self.start_date:
+                        volumes_with_tag.append({ "name" : volume['VolumeId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags)  })
+        
+            # Now, use the same paginator to retrieve all volumes (without filtering by tag)
+            for page in paginator.paginate():
+                for volume in page.get('Volumes', []):
+                    create_time = volume.get("CreateTime")
+                    volume_id = volume['VolumeId']
+                    tags = volume.get("Tags")  if "Tags" in volume else [],
+                    if create_time and create_time >= self.start_date:
+                        #if volume_id not in volumes_with_tag:
+                        if not any(d['name'] == volume_id for d in volumes_with_tag):
+                            volumes_added_tag.append({ "name" : volume_id, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            ec2_client.create_tags(
+                                Resources=[volume_id],
+                                Tags=[
+                                    {'Key': self.tag_key, 'Value': self.tag_value}
+                                ]
+                            )
+                            print("Tagged volume:", volume_id)
+                    else:
+                        volumes_skipped_tag.append({ "name" : volume_id, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+            
+            #Logging Tagging Resources
+            self.logging({ "region" : region, "service" : "ebs", "type" : "1", "resources" : volumes_with_tag })
+            self.logging({ "region" : region, "service" : "ebs", "type" : "2", "resources" : volumes_added_tag })
+            self.logging({ "region" : region, "service" : "ebs", "type" : "3", "resources" : volumes_skipped_tag })
+        except Exception as err:
+            logging.error(f'Region : {err}')
 
 
     # Function to tag EBS Snapshots
-    def tag_ebs_snapshots(self):
+    def tag_ebs_snapshots(self,region):
+        try:
+            logging.info(f'Region : {region}, Service : {"EC2-SNAPSHOT"}')
+            ec2_client = boto3.client('ec2',
+                                        aws_access_key_id=self.aws_access_key_id,
+                                        aws_secret_access_key=self.aws_secret_access_key,
+                                        aws_session_token=self.aws_session_token,
+                                        region_name=region)
+            snapshots_with_tag = []
+            snapshots_added_tag = []
+            snapshots_skipped_tag = []
         
-        for account in self.configuration['Accounts']:
-            self.authentication(account['id'])
+            # Create a paginator for EBS snapshots
+            paginator = ec2_client.get_paginator('describe_snapshots')
+            page_iterator = paginator.paginate(OwnerIds=['self'])
         
-            for region in account['regions']:
-                ec2_client = boto3.client('ec2',
-                                            aws_access_key_id=self.aws_access_key_id,
-                                            aws_secret_access_key=self.aws_secret_access_key,
-                                            aws_session_token=self.aws_session_token,
-                                            region_name=region)
-                snapshots_with_tag = []
-                snapshots_added_tag = []
-                snapshots_skipped_tag = []
-            
-                # Create a paginator for EBS snapshots
-                paginator = ec2_client.get_paginator('describe_snapshots')
-                page_iterator = paginator.paginate(OwnerIds=['self'])
-            
-                for page in page_iterator:
-                    snapshots = page.get('Snapshots', [])
-                    for snapshot in snapshots:
-                        create_time = snapshot.get("StartTime")
-                        tags = snapshot.get("Tags")  if "Tags" in snapshot else []
-                        if create_time and create_time >= self.start_date:
-                            # Check if the snapshot has the 'map-migrated' tag
-                            has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
-                            if has_map_migrated_tag:
-                                snapshots_with_tag.append({ "name" : snapshot['SnapshotId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                snapshots_added_tag.append({ "name" : snapshot['SnapshotId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                                # Add the 'map-migrated' tag to snapshots without it
-                                ec2_client.create_tags(Resources=[snapshot['SnapshotId']], Tags=[{'Key': self.tag_key, 'Value': self.tag_value}])
+            for page in page_iterator:
+                snapshots = page.get('Snapshots', [])
+                for snapshot in snapshots:
+                    create_time = snapshot.get("StartTime")
+                    tags = snapshot.get("Tags")  if "Tags" in snapshot else []
+                    if create_time and create_time >= self.start_date:
+                        # Check if the snapshot has the 'map-migrated' tag
+                        has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
+                        if has_map_migrated_tag:
+                            snapshots_with_tag.append({ "name" : snapshot['SnapshotId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                         else:
-                            snapshots_skipped_tag.append({ "name" : snapshot['SnapshotId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            
-                    #Logging Tagging Resources
-                    self.logging({ "region" : region, "service" : "snapshot", "type" : "1", "resources" : snapshots_with_tag })
-                    self.logging({ "region" : region, "service" : "snapshot", "type" : "2", "resources" : snapshots_added_tag })
-                    self.logging({ "region" : region, "service" : "snapshot", "type" : "3", "resources" : snapshots_skipped_tag })
+                            snapshots_added_tag.append({ "name" : snapshot['SnapshotId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            # Add the 'map-migrated' tag to snapshots without it
+                            ec2_client.create_tags(Resources=[snapshot['SnapshotId']], Tags=[{'Key': self.tag_key, 'Value': self.tag_value}])
+                    else:
+                        snapshots_skipped_tag.append({ "name" : snapshot['SnapshotId'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+                #Logging Tagging Resources
+                self.logging({ "region" : region, "service" : "snapshot", "type" : "1", "resources" : snapshots_with_tag })
+                self.logging({ "region" : region, "service" : "snapshot", "type" : "2", "resources" : snapshots_added_tag })
+                self.logging({ "region" : region, "service" : "snapshot", "type" : "3", "resources" : snapshots_skipped_tag })
+        except Exception as err:
+            logging.error(f'Region : {err}')
 
     # Function to tag RDS instances
-    def tag_rds_instances(self):
+    def tag_rds_instances(self,region):
+        try:
+            logging.info(f'Region : {region}, Service : {"RDS"}')
+            rds_client = boto3.client('rds',
+                                        aws_access_key_id=self.aws_access_key_id,
+                                        aws_secret_access_key=self.aws_secret_access_key,
+                                        aws_session_token=self.aws_session_token,
+                                        region_name=region)
         
-        for account in self.configuration['Accounts']:
-            self.authentication(account['id'])
+            rds_instances_with_tag = []
+            rds_instances_added_tag = []
+            rds_instances_skipped_tag = []
+            # Create a paginator for RDS instances
+            paginator = rds_client.get_paginator('describe_db_instances')
+            page_iterator = paginator.paginate()
         
-            for region in account['regions']:
-                # Create an RDS client
-                rds_client = boto3.client('rds',
-                                            aws_access_key_id=self.aws_access_key_id,
-                                            aws_secret_access_key=self.aws_secret_access_key,
-                                            aws_session_token=self.aws_session_token,
-                                            region_name=region)
-            
-                rds_instances_with_tag = []
-                rds_instances_added_tag = []
-                rds_instances_skipped_tag = []
-                # Create a paginator for RDS instances
-                paginator = rds_client.get_paginator('describe_db_instances')
-                page_iterator = paginator.paginate()
-            
-                for page in page_iterator:
-                    db_instances = page['DBInstances']
-            
-                    for rds_instance in db_instances:
-                        create_time = rds_instance.get("InstanceCreateTime")
-                        rds_tags = rds_client.list_tags_for_resource(ResourceName=rds_instance['DBInstanceArn'])['TagList']
-                        if create_time and create_time >= self.start_date:
-                            # Check if the instance already has the specified tag
-                            has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in rds_tags)
-                            if has_map_migrated_tag:
-                                rds_instances_with_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
-                            else:
-                                rds_instances_added_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
-                                # Add the specified tag to the instance
-                                rds_client.add_tags_to_resource(
-                                    ResourceName=rds_instance['DBInstanceArn'],
-                                    Tags=[{'Key': self.tag_key, 'Value': self.tag_value}]
-                                )
+            for page in page_iterator:
+                db_instances = page['DBInstances']
+        
+                for rds_instance in db_instances:
+                    create_time = rds_instance.get("InstanceCreateTime")
+                    rds_tags = rds_client.list_tags_for_resource(ResourceName=rds_instance['DBInstanceArn'])['TagList']
+                    if create_time and create_time >= self.start_date:
+                        # Check if the instance already has the specified tag
+                        has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in rds_tags)
+                        if has_map_migrated_tag:
+                            rds_instances_with_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
                         else:
-                            rds_instances_skipped_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
-                                
-                #Logging Tagging Resources
-                self.logging({ "region" : region, "service" : "rds", "type" : "1", "resources" : rds_instances_with_tag })
-                self.logging({ "region" : region, "service" : "rds", "type" : "2", "resources" : rds_instances_added_tag })
-                self.logging({ "region" : region, "service" : "rds", "type" : "3", "resources" : rds_instances_skipped_tag })                
-            
+                            rds_instances_added_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
+                            # Add the specified tag to the instance
+                            rds_client.add_tags_to_resource(
+                                ResourceName=rds_instance['DBInstanceArn'],
+                                Tags=[{'Key': self.tag_key, 'Value': self.tag_value}]
+                            )
+                    else:
+                        rds_instances_skipped_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
+                            
+            #Logging Tagging Resources
+            self.logging({ "region" : region, "service" : "rds", "type" : "1", "resources" : rds_instances_with_tag })
+            self.logging({ "region" : region, "service" : "rds", "type" : "2", "resources" : rds_instances_added_tag })
+            self.logging({ "region" : region, "service" : "rds", "type" : "3", "resources" : rds_instances_skipped_tag })     
+        except Exception as err:
+            logging.error(f'Region : {err}')
+    
             
 
 
 # Main Function
 def main():
+    time_format = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt=time_format)
+    logging.basicConfig(format='%(asctime)s %(levelname)s : %(message)s', level=logging.INFO)
+    
     
     # Start Tagging Process
     tagger = classTagger({})
-    tagger.tag_ec2_instances()
-    tagger.tag_ebs_volumes()
-    tagger.tag_ebs_snapshots()
-    tagger.tag_rds_instances()
+    tagger.start_process()
     
 if __name__ == "__main__":
     main()
