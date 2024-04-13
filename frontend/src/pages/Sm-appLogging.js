@@ -150,7 +150,7 @@ function Application() {
             content={
                 
                 <div style={{"padding" : "2em"}}>
-                    <Container header={<Header variant="h2" description="To view the application logfile, click View LogFile button to fetch content file.">
+                    <Container header={<Header variant="h2" description="To view the application logfile, click View LogFile button to fetch the content file.">
                                             Application Logging
                                           </Header>
                                       } 
