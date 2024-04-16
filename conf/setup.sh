@@ -81,5 +81,5 @@ cp -r /aws/apps/frontend/build/* /aws/apps/frontend/www/
 
 #Agent scheduler
 sudo service crond restart
-crontab -l | { cat; echo "*/5 * * * * sh /aws/apps/agent/run.sh"; } | crontab -
+crontab -l | { cat; echo "0 1 * * * sh /aws/apps/agent/run.sh"; } | crontab -
 

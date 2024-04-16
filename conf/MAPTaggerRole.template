@@ -4,8 +4,6 @@ Parameters:
   RoleARN:
       Type: String
       Description: IAM ARN Role for Central Account
-      
-  
 Resources:
     IAMPolicyMapTaggerSolution:
         Type: AWS::IAM::ManagedPolicy
@@ -95,7 +93,7 @@ Resources:
         Type: "AWS::IAM::Role"
         Properties:
             Path: "/"
-            RoleName: "MAPTaggingProcessRole1"
+            RoleName: "MAPTaggingProcessRole"
             AssumeRolePolicyDocument: !Sub |
                 {
                     "Version": "2012-10-17",
@@ -103,21 +101,7 @@ Resources:
                         {
                             "Effect": "Allow",
                             "Principal": {
-                                "AWS": "arn:aws:iam::039783469744:role/role-ec2-aws-showtime-labs"
-                            },
-                            "Action": "sts:AssumeRole"
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
                                 "AWS": "${RoleARN}"
-                            },
-                            "Action": "sts:AssumeRole"
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
-                                "AWS": "arn:aws:iam::039783469744:role/role_test"
                             },
                             "Action": "sts:AssumeRole"
                         }
