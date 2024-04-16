@@ -58,9 +58,9 @@ MAP Tagger Solution will use following resources:
 Follow the step-by-step instructions to configure and deploy the MAP Tagger Solution into your account.
 
 1. Make sure you have sign in AWS Console already.
-2. Download AWS Cloudformation Template ([MAPTaggerSolution.template](https://raw.githubusercontent.com/aws-samples/map-tagger-solution/main/conf/MAPTaggerSolution.template)) located into conf folder.
+2. Download AWS Cloudformation Template ([MAPTaggerSolution.template](/conf/MAPTaggerSolution.template)) located into conf folder.
 3. [**Open AWS CloudFormation Console**](https://console.aws.amazon.com/cloudformation/home#/stacks/create/template?stackName=MAPTaggerSolution)
-4. Create an stack using Cloudformation template ([MAPTaggerSolution.template](/conf/DBMonitoringSolution.template)) already downloaded on step 2.
+4. Create an stack using Cloudformation template ([MAPTaggerSolution.template](/conf/MAPTaggerSolution.template)) already downloaded on step 2.
 5. Input **Stack name** parameter. 
 6. Acknowledge **Application Updates - Disclaimer** parameter.
 7. Input **Username** parameter, this username will be used to access the application. An email will be sent with temporary password from AWS Cognito Service. 
