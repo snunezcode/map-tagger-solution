@@ -178,17 +178,27 @@ function Login() {
     
     function convertToObjects(tagListString) {
       try {
+        console.log(tagListString);
+        
         // Remove the outer parentheses and square brackets from the string
-        const innerString = tagListString.slice(2, -2);
-        console.log(innerString);
+        var innerString = "";
+        if (tagListString.substring(0,2) == "[[")
+          innerString = tagListString.slice(1, -1);
+        else
+          innerString = tagListString;
+        
+        //console.log(innerString);
         // Parse the inner string as a JSON array
-        const jsonArray = JSON.parse(`[${innerString}]`);
-    
-        // Return the parsed array
-        return jsonArray;
+        const jsonArray = JSON.parse(`${innerString}`);
+        if (Array.isArray(jsonArray))
+            return jsonArray;
+        else
+            return [];
+        
+        
       } catch (error) {
         console.error('Error converting string to JSON objects:', error);
-        return null;
+        return [];
       }
     }
 
