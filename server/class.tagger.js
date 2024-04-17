@@ -62,7 +62,7 @@ class classTaggerProcess {
             } catch (err) {
                 console.error(err);
             }
-            return files;
+            return files.sort().reverse();
         }
         
         //-- Read log fiile
