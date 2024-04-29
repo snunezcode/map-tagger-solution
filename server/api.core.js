@@ -2,6 +2,7 @@ const { classDataStore, classConfiguration } = require('./class.core.js');
 const { classApplicationUpdate } = require('./class.update.js');
 const { classTaggerProcess } = require('./class.tagger.js');
 
+
 var dataObjectStore = new classDataStore();
 var taggerProcessObject = new classTaggerProcess();
 var configurationObject = new classConfiguration();

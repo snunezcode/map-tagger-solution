@@ -25,13 +25,26 @@ done
 #Configure Agent Libraries
 pip3.11 install boto3
 pip3.11 install pymysql
+pip3.11 install cryptography
  
 
 #Configure database
+sudo cp /etc/my.cnf /tmp/my.cnf
 sudo sh -c 'echo -e "\n[mysqld]\nskip-grant-tables\nskip-networking" >> /etc/my.cnf'
 sudo systemctl start mariadb
 sudo chkconfig mariadb on
 cd /aws/apps/conf/; mysql --socket=/var/lib/mysql/mysql.sock < database.sql
+
+#Configure credentials
+uuid=$(uuidgen)
+mysql -e "CREATE USER 'app'@'localhost' IDENTIFIED BY '$uuid';GRANT ALL PRIVILEGES ON db.* TO 'app'@'localhost';"
+echo '{ "user" : "app", "key": "$uuid" }' > /aws/apps/server/credentials.json
+
+#Restart database dervices
+sudo cat /tmp/my.cnf > /etc/my.cnf
+sudo service mariadb restart
+
+
 
 
 

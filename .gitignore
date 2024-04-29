@@ -8,6 +8,7 @@ frontend/node_modules/
 frontend/public/aws-exports.json
 server/node_modules/
 server/aws-exports.json
+server/credentials.json
 test/
 frontend/package-lock.json
 server/package-lock.json

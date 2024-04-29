@@ -7,6 +7,9 @@ const { classLogging } = require('./class.logging.js');
 //-- MySQL Object
 const mysql = require('mysql2/promise')
 
+//-- Configuration
+var configuration = JSON.parse(fs.readFileSync('./credentials.json'));
+
 
 //--#############
 //--############# FUNCTIONS                                                                                        
@@ -74,8 +77,8 @@ class classDataStore {
         constructor() { 
                 this.objectConnection.host = "localhost";
                 this.objectConnection.port = "3306";
-                this.objectConnection.user = "admin";
-                this.objectConnection.password = "";
+                this.objectConnection.user = configuration['user'];
+                this.objectConnection.password = configuration['key'];
                 this.objectConnection.database = "db";
                 this.#openConnection();
         }
@@ -96,7 +99,7 @@ class classDataStore {
                                                                             database: this.objectConnection.database,
                                                                             port: this.objectConnection.port,
                                                                             connectionLimit:2,
-                                                                            socketPath: '/var/lib/mysql/mysql.sock'
+                                                                            //socketPath: '/var/lib/mysql/mysql.sock'
                                                                             });
                                                                                     
                                 

@@ -20,12 +20,13 @@ class classTagger():
         self.tag_value = ""
         self.start_date = ""
         self.filters = []
-        self.connection = pymysql.connect(db='db',user='root', unix_socket="/var/lib/mysql/mysql.sock")
+        self.credentials = self.load_credentials()
+        self.connection = pymysql.connect(db='db', host="localhost", port=3306, user=self.credentials['user'], passwd=self.credentials['key'])
         self.cursor = self.connection.cursor()  
         self.configuration = {}
         self.initialize()
 
-    
+        
     
     ####----| Object Initialization
     def initialize(self):
@@ -71,6 +72,15 @@ class classTagger():
         
     
     
+    def load_credentials(self):
+        try:
+            file = open('../server/credentials.json')
+            credentials = json.load(file)
+            file.close()
+            return credentials
+        except Exception as err:
+            logging.error(f'Error : {err}')
+        
     
     ####----| Database Looging 
     def logging(self,record):

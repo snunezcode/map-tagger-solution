@@ -43,7 +43,7 @@ export const SideMainLayoutMenu = [
     {
           type: "link",
           text: "Documentation",
-          href: "https://github.com/aws-samples/da-monitoring-solution/",
+          href: "https://github.com/aws-samples/map-tagging-solution/",
           external: true,
           externalIconAriaLabel: "Opens in a new tab"
     },
