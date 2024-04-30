@@ -416,8 +416,8 @@ class classTagger():
                 load_balancers = page.get('LoadBalancers', [])
                 for load_balancer in load_balancers:
                     create_time = load_balancer.get("CreatedTime")
-                    elb_tags = client_elbv2.describe_tags(ResourceArns=[load_balancer_arn])['TagDescriptions'][0]['Tags']
                     load_balancer_arn = load_balancer['LoadBalancerArn']
+                    elb_tags = client_elbv2.describe_tags(ResourceArns=[load_balancer_arn])['TagDescriptions'][0]['Tags']
                     if create_time and create_time >= self.start_date:
                         
                         # Check if the ELB has the 'map-migrated' tag
@@ -1074,10 +1074,10 @@ class classTagger():
                         # Check if the repository already has the specified tag
                         has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in ecr_tags)
                         if has_map_migrated_tag:
-                            ecr_repositories_with_tag.append({ "name" : cr_repo['repositoryName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(ecr_tags) })
+                            ecr_repositories_with_tag.append({ "name" : ecr_repo['repositoryName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(ecr_tags) })
                             
                         else:
-                            ecr_repositories_added_tag.append({ "name" : cr_repo['repositoryName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(ecr_tags) })
+                            ecr_repositories_added_tag.append({ "name" : ecr_repo['repositoryName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(ecr_tags) })
                             
                             # Add the specified tag to the repository
                             ecr_client.tag_resource(
@@ -1085,7 +1085,7 @@ class classTagger():
                                 tags=[{'Key': self.tag_key, 'Value': self.tag_value}]
                             )
                     else:
-                        ecr_repositories_skipped_tag.append({ "name" : cr_repo['repositoryName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(ecr_tags) })
+                        ecr_repositories_skipped_tag.append({ "name" : ecr_repo['repositoryName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(ecr_tags) })
                             
         
             #Logging Tagging Resources
@@ -1368,7 +1368,7 @@ class classTagger():
                     create_time = attachment.get("CreationTime")
                     attachment_id = attachment['TransitGatewayAttachmentId']
                     attachment_tags = ec2_client.describe_tags(Filters=[{'Name': 'resource-id', 'Values': [attachment_id]}])['Tags']
-                    if create_time and create_time >= start_date:
+                    if create_time and create_time >= self.start_date:
                         # Check if the Transit Gateway Attachment already has the specified tag
                         has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in attachment_tags)
                         if has_map_migrated_tag:
@@ -1526,7 +1526,7 @@ class classTagger():
                     create_time = api['createdDate']
                     tags = apigateway_client.get_tags(resourceArn=f"arn:aws:apigateway:{region}::/restapis/{api_id}")
                     # Check if the API Gateway is already tagged and created after start_date
-                    if create_time.timestamp() >= self.start_date:
+                    if create_time >= self.start_date:
                         
                         if self.tag_key in tags.get('tags', {}):
                             existing_value = tags['tags'][self.tag_key]

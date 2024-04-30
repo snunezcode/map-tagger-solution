@@ -47,6 +47,19 @@ MAP Tagger Solution will use following resources:
      The cost of this resource will depend of size selected during the deployment process. AWS EC2 instance pricing can be review [here](https://aws.amazon.com/ec2/pricing/).
 
 
+## Specific use case
+
+Even when MAP Tagger can solve problems along the way of tagging in MAP Large engagements, it’s safe to say there are specific use cases that allow the tool to be functional. MAP Tagger is only effective (as of April 2024) where:
+
+- There’s only one MAP engagement in the customer payer account.
+- There’s a defined list of accounts where the workloads are being tagged (and regions).
+- There’s a defined start date of migrated workloads (usually the MAP signing date).
+- There are no special workloads that require a different tag to provide extra credits (DB&A, SAP, etc).
+- The migrated services are among the List of services covered by the solution
+- Any scenario outside of the previously described may cause an undesired effect on the tagging process.
+- List of services covered by the solution: EC2 Instances, EBS Volumes, EBS Snapshots, EFS/FSx file systems, FSx Snapshots, RDS Instances, RDS Snapshots, S3 Buckets, Elastic Load Balancers, DynamoDB Tables, AWS Backup Vaults, AWS Backup Plans, ECS/EKS Clusters, ECR Repositories, EMR Clusters, Transit Gateways, Transit Gateways Attachments, WorkSpaces, Lambda functions and API Gateways.
+
+
 
 ## Solution Deployment
 

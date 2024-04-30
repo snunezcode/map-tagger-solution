@@ -41,7 +41,7 @@ mysql -e "CREATE USER 'app'@'localhost' IDENTIFIED BY '$uuid';GRANT ALL PRIVILEG
 echo '{ "user" : "app", "key": "$uuid" }' > /aws/apps/server/credentials.json
 
 #Restart database dervices
-sudo cat /tmp/my.cnf > /etc/my.cnf
+sudo cp /tmp/my.cnf /etc/my.cnf
 sudo service mariadb restart
 
 
