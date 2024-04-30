@@ -27,6 +27,10 @@ pip3.11 install boto3
 pip3.11 install pymysql
 pip3.11 install cryptography
  
+ 
+#Change permissions
+sudo chown -R ec2-user:ec2-user /aws/apps
+
 
 #Configure database
 sudo cp /etc/my.cnf /tmp/my.cnf
@@ -35,7 +39,7 @@ sudo systemctl start mariadb
 sudo chkconfig mariadb on
 cd /aws/apps/conf/; mysql --socket=/var/lib/mysql/mysql.sock < database.sql
 
-#Configure credentials
+#Configure database credentials
 uuid=$(uuidgen)
 mysql -e "CREATE USER 'app'@'localhost' IDENTIFIED BY '$uuid';GRANT ALL PRIVILEGES ON db.* TO 'app'@'localhost';"
 echo '{ "user" : "app", "key": "$uuid" }' > /aws/apps/server/credentials.json
@@ -59,12 +63,11 @@ sudo chkconfig nginx on
 sudo chkconfig api.core on
 sudo chkconfig crond on
 
-#Change permissions
-sudo chown -R ec2-user:ec2-user /aws/apps
 
 #Copy aws-exports.json
 cp /aws/apps/conf/aws-exports.json /aws/apps/frontend/public/
 cp /aws/apps/conf/aws-exports.json /aws/apps/server/
+
 
 #Re-Start NGINX Services
 sudo service nginx restart
