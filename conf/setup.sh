@@ -42,7 +42,7 @@ cd /aws/apps/conf/; mysql --socket=/var/lib/mysql/mysql.sock < database.sql
 #Configure database credentials
 uuid=$(uuidgen)
 mysql -e "FLUSH PRIVILEGES; CREATE USER 'app'@'localhost' IDENTIFIED BY '$uuid';GRANT ALL PRIVILEGES ON db.* TO 'app'@'localhost';"
-echo '{ "user" : "app", "key": "${uuid}" }' > /aws/apps/server/credentials.json
+echo "{ \"user\" : \"app\", \"key\": \"$uuid\" }" > /aws/apps/server/credentials.json
 
 #Restart database dervices
 sudo cp /tmp/my.cnf /etc/my.cnf
