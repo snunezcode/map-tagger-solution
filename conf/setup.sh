@@ -32,7 +32,7 @@ pip3.11 install cryptography
 sudo chown -R ec2-user:ec2-user /aws/apps
 
 
-#Configure database
+#Configure database service
 sudo cp /etc/my.cnf /tmp/my.cnf
 sudo sh -c 'echo -e "\n[mysqld]\nskip-grant-tables\nskip-networking" >> /etc/my.cnf'
 sudo systemctl start mariadb

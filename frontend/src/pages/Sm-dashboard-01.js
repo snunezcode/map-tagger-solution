@@ -291,7 +291,7 @@ function Login() {
                                           </SpaceBetween>
                                         }
                                       >
-                                        Summay Tagging Process
+                                        Summary Tagging Process
                                       </Header>
                                     }
                           >
