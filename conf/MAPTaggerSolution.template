@@ -50,7 +50,7 @@ Metadata:
       ApplicationUpdateUrl:
         default: "URL used to verify new application versions."
       
-        
+    
 Parameters:
 
   VPCParam:
@@ -111,6 +111,9 @@ Parameters:
       - "true"
       - "false"
   
+Conditions:
+    isPublic: !Equals [ !Ref PublicAccess, true]
+
       
 Resources:
     InstanceProfile: 
@@ -358,6 +361,7 @@ Outputs:
     PublicAppURL:
         Description: Public Endpoint
         Value: !Join [ "", ["https://", !GetAtt EC2Instance.PublicIp]]
+        Condition: isPublic
     PrivateAppURL:
         Description: Private Endpoint
         Value: !Join [ "", ["https://", !GetAtt EC2Instance.PrivateIp]]
