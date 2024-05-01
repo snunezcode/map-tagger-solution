@@ -280,7 +280,7 @@ function Login() {
                             header={
                                       <Header
                                         variant="h2"
-                                        description='Summary of resources tagget'
+                                        description='Summary of tagged resources[by process id]'
                                         actions={
                                           <SpaceBetween
                                             direction="horizontal"
@@ -291,7 +291,7 @@ function Login() {
                                           </SpaceBetween>
                                         }
                                       >
-                                        Summary Tagging Process
+                                        Tagging Execution Summary
                                       </Header>
                                     }
                           >
@@ -340,7 +340,7 @@ function Login() {
                               columnsTable={columnsTableResources}
                               visibleContent={visibleTableResources}
                               dataset={itemsTableResources}
-                              title={"Tagging Process"}
+                              title={"Tagging Processes"}
                               description={""}
                               pageSize={10}
                               onSelectionItem={( item ) => {

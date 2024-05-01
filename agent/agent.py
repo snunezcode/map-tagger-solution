@@ -58,6 +58,9 @@ class classTagger():
         try:
             logging.info(f'Account Authentication : {account}...')
             self.account = account
+            self.aws_access_key_id = ""
+            self.aws_secret_access_key = ""
+            self.aws_session_token = ""
             sts_client = boto3.client('sts',region_name="us-east-1")
             assumed_role_object = sts_client.assume_role(
                 RoleArn=f"arn:aws:iam::{account}:role/MAPTaggingProcessRole",
@@ -67,8 +70,10 @@ class classTagger():
             self.aws_access_key_id = credentials['AccessKeyId']
             self.aws_secret_access_key = credentials['SecretAccessKey']
             self.aws_session_token = credentials['SessionToken']
+            return True
         except Exception as err:
             logging.error(f'Error : {err}')
+            return False
         
     
     
@@ -101,78 +106,79 @@ class classTagger():
             logging.info(f'Starting Process...')
             for account in self.configuration['Accounts']:
                 logging.info(f'Processing Account : {account}')
-                self.authentication(account['id'])
-                for region in account['regions']:
+                if (self.authentication(account['id'])):
                     
-                    # Tag EC2 instances
-                    self.tag_ec2_instances(region)
-                
-                    # Tag EBS volumes
-                    self.tag_ebs_volumes(region)
-                
-                    # Tag EBS snapshots
-                    self.tag_ebs_snapshots(region)
-                
-                    # Tag Elastic Load Balancers
-                    self.tag_elbs(region)
-                
-                    # Tag RDS instances
-                    self.tag_rds_instances(region)
-                
-                    # Tag RDS snapshots
-                    self.tag_rds_snapshots(region)
-                
-                    # Tag Elastic File System (EFS)
-                    self.tag_efs(region)
-                
-                    # Tag Elastic File System (FSx)
-                    self.tag_fsx(region)
-                
-                    # Tag DynamoDB tables
-                    self.tag_dynamodb_tables(region)
-                
-                    # Tag Lambda functions
-                    self.tag_lambda_functions(region)
-                
-                    # Tag S3 buckets
-                    self.tag_s3_buckets(region)
-                
-                    # Tag AWS Backup resources (Backup Vaults)
-                    self.tag_backup_vaults(region)
-                
-                    # Tag AWS Backup resources (Backup Plans)
-                    self.tag_backup_plans(region)
-                
-                    # Tag Amazon FSx snapshots
-                    self.tag_fsx_snapshots(region)
-                
-                    # Tag Amazon ECR repositories
-                    self.tag_ecr_repositories(region)
-                
-                    # Tag Transit Gateways
-                    self.tag_transit_gateways(region)
-                
-                    # Tag AWS Transit Gateway Attachments
-                    self.tag_transit_gateway_attachments(region)
-                
-                    # Tag AWS Transfer Family servers
-                    self.tag_transfer_family_servers(region)
-                
-                    # Tag API Gateways
-                    self.tag_rest_api_gateways(region)
-                    self.tag_http_websocket_api_gateways(region)
-                
-                    # Tag WorkSpaces - NOT TESTED PROPERLY
-                    # self.tag_workspaces(region)
-                
-                    # Tag Amazon EKS clusters - NOT TESTED PROPERLY
-                    # self.tag_eks_clusters(region)
-                
-                    # Tag Amazon ECS clusters - NOT TESTED PROPERLY
-                    # self.tag_ecs_clusters(region)
-                
-                    # Tag Amazon EMR - NOT TESTED PROPERLY
-                    # self.tag_emr_clusters(region)
+                    for region in account['regions']:
+                        
+                        # Tag EC2 instances
+                        self.tag_ec2_instances(region)
+                    
+                        # Tag EBS volumes
+                        self.tag_ebs_volumes(region)
+                    
+                        # Tag EBS snapshots
+                        self.tag_ebs_snapshots(region)
+                    
+                        # Tag Elastic Load Balancers
+                        self.tag_elbs(region)
+                    
+                        # Tag RDS instances
+                        self.tag_rds_instances(region)
+                    
+                        # Tag RDS snapshots
+                        self.tag_rds_snapshots(region)
+                    
+                        # Tag Elastic File System (EFS)
+                        self.tag_efs(region)
+                    
+                        # Tag Elastic File System (FSx)
+                        self.tag_fsx(region)
+                    
+                        # Tag DynamoDB tables
+                        self.tag_dynamodb_tables(region)
+                    
+                        # Tag Lambda functions
+                        self.tag_lambda_functions(region)
+                    
+                        # Tag S3 buckets
+                        self.tag_s3_buckets(region)
+                    
+                        # Tag AWS Backup resources (Backup Vaults)
+                        self.tag_backup_vaults(region)
+                    
+                        # Tag AWS Backup resources (Backup Plans)
+                        self.tag_backup_plans(region)
+                    
+                        # Tag Amazon FSx snapshots
+                        self.tag_fsx_snapshots(region)
+                    
+                        # Tag Amazon ECR repositories
+                        self.tag_ecr_repositories(region)
+                    
+                        # Tag Transit Gateways
+                        self.tag_transit_gateways(region)
+                    
+                        # Tag AWS Transit Gateway Attachments
+                        self.tag_transit_gateway_attachments(region)
+                    
+                        # Tag AWS Transfer Family servers
+                        self.tag_transfer_family_servers(region)
+                    
+                        # Tag API Gateways
+                        self.tag_rest_api_gateways(region)
+                        self.tag_http_websocket_api_gateways(region)
+                    
+                        # Tag WorkSpaces - NOT TESTED PROPERLY
+                        # self.tag_workspaces(region)
+                    
+                        # Tag Amazon EKS clusters - NOT TESTED PROPERLY
+                        # self.tag_eks_clusters(region)
+                    
+                        # Tag Amazon ECS clusters - NOT TESTED PROPERLY
+                        # self.tag_ecs_clusters(region)
+                    
+                        # Tag Amazon EMR - NOT TESTED PROPERLY
+                        # self.tag_emr_clusters(region)
                     
                     
             logging.info(f'Process Completed.')
@@ -424,13 +430,13 @@ class classTagger():
                         has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in elb_tags)
                         
                         if has_map_migrated_tag:
-                            load_balancers_with_tag.append({ "name" : load_balancer_arn, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(elb_tags) })
+                            load_balancers_with_tag.append({ "name" : load_balancer['LoadBalancerName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(elb_tags) })
                         else:
-                            load_balancers_added_tag.append({ "name" : load_balancer_arn, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(elb_tags) })
+                            load_balancers_added_tag.append({ "name" : load_balancer['LoadBalancerName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(elb_tags) })
                             # Add the 'map-migrated' tag to ELBs without it
                             client_elbv2.add_tags(ResourceArns=[load_balancer_arn], Tags=[{'Key': self.tag_key, 'Value': self.tag_value}])
                     else:
-                        load_balancers_skipped_tag.append({ "name" : load_balancer_arn, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(elb_tags) })
+                        load_balancers_skipped_tag.append({ "name" : load_balancer['LoadBalancerName'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(elb_tags) })
                             
                             
             #Logging Tagging Resources
@@ -730,8 +736,7 @@ class classTagger():
 
 
 
-
-
+    
     ####----| Function to tag S3 buckets with pagination
     def tag_s3_buckets(self,region):
         
@@ -767,13 +772,13 @@ class classTagger():
         
                     for bucket in buckets:
                         create_time = bucket.get("CreationDate")
-                        try:
-                            existing_tags = s3_client.get_bucket_tagging(Bucket=bucket['Name']).get('TagSet', [])
-                        except botocore.exceptions.ClientError as e:
-                            existing_tags = []
-                            logging.error(f'Error on {bucket["Name"]}: {e}')
                                 
                         if create_time and create_time >= self.start_date:
+                            try:
+                                existing_tags = s3_client.get_bucket_tagging(Bucket=bucket['Name']).get('TagSet', [])
+                            except botocore.exceptions.ClientError as e:
+                                existing_tags = []
+
                             try:
                                 # Check if the bucket already has existing tags
                                 
@@ -797,12 +802,14 @@ class classTagger():
                             
                                 else:
                                     # If the tag does not exist, add it with the new value
+                                    if not existing_tags:
+                                        existing_tags = []
                                     existing_tags.append({'Key': self.tag_key, 'Value': self.tag_value})
                                     s3_client.put_bucket_tagging(
                                         Bucket=bucket['Name'],
                                         Tagging={'TagSet': existing_tags}
                                     )
-                                    buckets_added_tag.append(bucket['Name'])
+                                    buckets_added_tag.append({ "name" : bucket['Name'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(existing_tags) })
                             except botocore.exceptions.ClientError as e:
                                 # Check if the error code indicates the absence of the tag set
                                 if e.response['Error']['Code'] == 'NoSuchTagSet':
@@ -834,10 +841,7 @@ class classTagger():
         
         except Exception as err:
             logging.error(f'Error : {err}')
-        
-       
-
-
+            
 
 
     ####----| Function to tag AWS Backup vaults

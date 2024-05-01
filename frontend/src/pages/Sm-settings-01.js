@@ -182,7 +182,7 @@ function Application() {
                                     <td valign="middle" style={{"width":"50%", "padding-right": "2em", "text-align": "center"}}>  
                                         <FormField
                                           label="Process Configuration"
-                                          description="Content should be introduce using JSON format"
+                                          description="Parameters must be introduced using the following JSON format"
                                         >
                                             <Textarea
                                               placeholder='{ "accounts" : [{ "id" : "123456789", "regions" : ["us-east-1","us-west-2"] } ] }'
