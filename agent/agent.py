@@ -771,13 +771,15 @@ class classTagger():
                     buckets = response['Buckets']
         
                     for bucket in buckets:
+                        
+                        try:
+                            existing_tags = s3_client.get_bucket_tagging(Bucket=bucket['Name']).get('TagSet', [])
+                        except botocore.exceptions.ClientError as e:
+                            existing_tags = []
+                        
                         create_time = bucket.get("CreationDate")
-                                
+                        
                         if create_time and create_time >= self.start_date:
-                            try:
-                                existing_tags = s3_client.get_bucket_tagging(Bucket=bucket['Name']).get('TagSet', [])
-                            except botocore.exceptions.ClientError as e:
-                                existing_tags = []
 
                             try:
                                 # Check if the bucket already has existing tags

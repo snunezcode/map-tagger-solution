@@ -350,6 +350,8 @@ app.get("/api/aws/tagger/configuration/save", async (req, res) => {
  
     const params = req.query;
     
+    console.log(params.configuration);
+    
     try {
         configurationObject.write(params.configuration)
           .then(() => {

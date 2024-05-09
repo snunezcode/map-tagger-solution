@@ -78,7 +78,7 @@ function Application() {
     async function saveConfiguration (){
             try{
             
-                var params = { configuration : JSON.parse(txtAccountsField) };
+                var params = { configuration : txtAccountsField };
                 const { data } = await Axios.get(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/configuration/save`,{ params : params });
                 console.log(data);
                 if (data.state == "success"){

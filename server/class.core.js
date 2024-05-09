@@ -240,14 +240,21 @@ class classConfiguration {
         
         write(data) {
           return new Promise((resolve, reject) => {
-            const jsonData = JSON.stringify(data, null, 4); // Pretty print with indentation level 2
-            fs.writeFile(this.#filePath, jsonData, 'utf8', (err) => {
-              if (err) {
+            //const jsonData = JSON.stringify(data, null, 4); // Pretty print with indentation level 2
+            try {
+                const jsonObject = JSON.parse(data);
+                const jsonData = JSON.stringify(jsonObject, null, 4); // Pretty print with indentation level 2
+                fs.writeFile(this.#filePath, jsonData, 'utf8', (err) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve();
+                  }
+                });
+            }
+            catch(err){
                 reject(err);
-              } else {
-                resolve();
-              }
-            });
+            }
           });
         }
         
