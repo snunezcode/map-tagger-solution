@@ -76,11 +76,12 @@ function Application() {
     };
     
     async function saveConfiguration (){
-            try{
+        try{
+            
+                Axios.defaults.headers.common['x-csrf-token'] = sessionStorage.getItem("x-csrf-token");
             
                 var params = { configuration : txtAccountsField };
-                const { data } = await Axios.get(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/configuration/save`,{ params : params });
-                console.log(data);
+                const { data } = await Axios.post(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/configuration/save`,{ params : params });
                 if (data.state == "success"){
                   
                       setApplicationMessage([
@@ -108,6 +109,7 @@ function Application() {
                       ]);
                   
                 }
+                
         }
         catch{
               setApplicationMessage([

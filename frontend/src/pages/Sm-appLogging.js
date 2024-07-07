@@ -1,5 +1,6 @@
 import { useState,useEffect,useRef } from 'react'
 import Axios from 'axios'
+import { useSearchParams } from 'react-router-dom';
 import { configuration, SideMainLayoutHeader,SideMainLayoutMenu } from './Configs';
 
 import { applicationVersionUpdate, gatherLocalVersion } from '../components/Functions';
@@ -11,6 +12,7 @@ import AppLayout from '@cloudscape-design/components/app-layout';
 import Flashbar from "@cloudscape-design/components/flashbar";
 import Container from "@cloudscape-design/components/container";
 import Select from "@cloudscape-design/components/select";
+import Box from "@cloudscape-design/components/box";
 
 
 import SpaceBetween from "@cloudscape-design/components/space-between";
@@ -37,6 +39,10 @@ export const splitPanelI18nStrings: SplitPanelProps.I18nStrings = {
 
 
 function Application() {
+    
+    const [params]=useSearchParams();
+    const logId=params.get("logid");  
+    
   
     //-- Application Version
     const [messages, setMessages] = useState([]);
@@ -52,7 +58,7 @@ function Application() {
     
     //-- Table Messages
     const columnsTable =  [
-                  {id: 'message', header: 'Messages',cell: item => item,ariaLabel: createLabelFunction('message'),sortingField: 'message',}
+                  {id: 'message', header: 'Messages',cell: item => item.message,ariaLabel: createLabelFunction('message'),sortingField: 'message',}
     ];
     
     const visibleContent = ['message'];
@@ -79,10 +85,18 @@ function Application() {
                     });
                 
                     setLogFilesList(logFiles);
-                    if (logFiles.length > 0) {
-                        setSelectedOption(logFiles[0]);
-                        logFileName.current=logFiles[0].value;
+                    if (logId != null) {
+                        setSelectedOption({ label : logId, value : logId });
+                        logFileName.current=logId;
                         gatherLogFileContent();
+                        
+                    }
+                    else{
+                        if (logFiles.length > 0) {
+                            setSelectedOption(logFiles[0]);
+                            logFileName.current=logFiles[0].value;
+                            gatherLogFileContent();
+                        }
                     }
                          
                                                     
@@ -111,8 +125,14 @@ function Application() {
             Axios.get(`${api_url}/api/aws/tagger/logging/get/content`,{
                       params: params, 
                   }).then((data)=>{
-                     console.log(data);
-                     setMessages(data.data.logContent);
+                    var content = [];
+                    data.data.logContent.reverse().forEach(line => {
+                        content.push({
+                                      message: line,
+                                     });
+                    });
+                    setMessages(content);
+                     
               })
               .catch((err) => {
                   console.log('Timeout API Call : /api/aws/tagger/logging/get/content' );
@@ -151,10 +171,11 @@ function Application() {
                 
                 <div style={{"padding" : "2em"}}>
                     <Container header={<Header variant="h2" description="To view the application logfile, click View LogFile button to fetch the content file.">
-                                            Application Logging
+                                            {"Application Logging (" + logFileName.current + ")"}
                                           </Header>
                                       } 
                       >
+                                       
                         <CustomTable02
                                 columnsTable={columnsTable}
                                 visibleContent={visibleContent}

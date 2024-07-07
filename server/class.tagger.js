@@ -11,17 +11,17 @@ class classTaggerProcess {
         logging = [];
         status = "non-started"
         applicationDirectory = "/aws/apps/agent/";
-        scriptCommand = "sudo -u ec2-user sh /aws/apps/agent/run.sh"
+        scriptCommand = "sudo -u ec2-user sh /aws/apps/agent/run.sh "
         constructor(object) { 
             
         }
         
         //-- StartUpdate
-        startProcess(module,type,message) { 
+        startProcess(processType, processId) { 
             
             this.status = "started";
             this.logging = [];
-            const objectShell = exec(this.scriptCommand);
+            const objectShell = exec(this.scriptCommand + processType +  " " + processId );
             objectShell.stdout.on('data', (data)=>{
                     if (data !== "") {
                         this.logging.unshift({ timestamp : new Date().toLocaleString(), message : data });

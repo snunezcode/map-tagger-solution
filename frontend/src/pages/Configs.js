@@ -9,7 +9,8 @@ export const configuration =
         "application-title": "MAP Tagger Solution",
         "version-code-url" : "https://version.code.ds.wwcs.aws.dev/",
         "convert-Gbps-Bytesps" : 125000000,
-        "refresh-interval-emr-cluster" : 5*1000
+        "refresh-interval-emr-cluster" : 5*1000,
+        "refresh-interval-tagging-process" : 5*1000,
     },
     "colors": {
         "fonts" : {
@@ -43,7 +44,7 @@ export const SideMainLayoutMenu = [
     {
           type: "link",
           text: "Documentation",
-          href: "https://github.com/aws-samples/map-tagging-solution/",
+          href: "https://github.com/aws-samples/map-tagger-solution/",
           external: true,
           externalIconAriaLabel: "Opens in a new tab"
     },

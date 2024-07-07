@@ -7,6 +7,7 @@ cd /tmp
 sudo rm -rf map-tagger-solution
 git clone https://github.com/GitHubRepository/map-tagger-solution.git
 cd map-tagger-solution
+cp /aws/apps/server/configuration.json server/
 sudo cp -r server frontend agent /aws/apps
 
 #React Application Installation

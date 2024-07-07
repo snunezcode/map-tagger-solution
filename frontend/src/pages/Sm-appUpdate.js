@@ -137,7 +137,7 @@ function Application() {
    
     useEffect(() => {
         gatherVersion();
-        const id = setInterval(gatherApplicationUpdateStatus, configuration["apps-settings"]["refresh-interval-emr-cluster"]);
+        const id = setInterval(gatherApplicationUpdateStatus, configuration["apps-settings"]["refresh-interval-tagging-process"]);
         return () => clearInterval(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

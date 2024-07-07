@@ -5,144 +5,6 @@ import botocore
 import pymysql.cursors
 import json
 import logging
-import sys
-import time
-
-
-####----|
-####----| className : classAWSObject
-####----|
-
-class classLogging():
-
-    ####----| Object Constructor
-    def __init__(self,object):
-        self.object = object
-    
-    ####----| Object Init
-    def initialize(self,process_id):
-        formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
-        logging.basicConfig(filename=f'{process_id}.log',format='%(asctime)s %(levelname)s : %(message)s', level=logging.INFO)
-        console = logging.StreamHandler()
-        console.setFormatter(formatter)
-        logging.getLogger().addHandler(console)
-        
-    ####----| Write Info 
-    def info(self,message):
-        try:
-            logging.info(message)
-        except Exception as err:
-            logging.error(f'Object : {self.object}, Error : {err}')
-            
-    
-    ####----| Write Error 
-    def error(self,message):
-        try:
-            logging.error(f'Object : {self.object}, Error : {message}')
-        except Exception as err:
-            logging.error(f'Object : {self.object}, Error : {err}')
-            
-            
-
-####----|
-####----| className : classDatabase
-####----|
-
-class classDatabase():
-    
-    
-    ####----| Object Constructor
-    def __init__(self):
-        self.logging = classLogging("classDatabase")
-        self.credentials = self.load_credentials()
-        self.connection = pymysql.connect(db='db', host="localhost", port=3306, user=self.credentials['user'], passwd=self.credentials['key'])
-        self.cursor = self.connection.cursor()  
-        
-    
-    
-    ####----| Load database credentials        
-    def load_credentials(self):
-        try:
-            file = open('../server/credentials.json')
-            credentials = json.load(file)
-            file.close()
-            return credentials
-        except Exception as err:
-            self.logging.error(f'Error : {err}')
-            
-    
-    ####----| Create master inventory process 
-    def create_master_inventory_process(self,record):
-        try:
-            
-            sql = "INSERT INTO `tbTaggingProcess` (`process_id`, `inventory_status`, `inventory_start_date`,`inventory_items_total`, `inventory_items_completed`, `tagging_items_total`, `tagging_items_completed`, `configuration`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-            self.cursor.execute(sql, (record['process_id'], "Started", datetime.now().strftime("%Y-%m-%d %H:%M:%S"),record["items_total"], 0,record["items_total"], 0, record["configuration"] ))
-            self.connection.commit()
-        except Exception as err:
-            self.logging.error(f'Error : create_master_inventory_process : {err}')
-               
-    
-    ####----| Update master inventory process 
-    def update_master_inventory_process(self,record):
-        try:
-            
-            sql = "UPDATE `tbTaggingProcess` SET `inventory_status` = %s, `inventory_message` = %s, `inventory_items_completed` = %s, `inventory_end_date` = %s WHERE `process_id` = %s "
-            self.cursor.execute(sql, (record['status'], record['message'], record['items_completed'], datetime.now().strftime("%Y-%m-%d %H:%M:%S"), record["process_id"] ))
-            self.connection.commit()
-        except Exception as err:
-            self.logging.error(f'Error : update_master_inventory_process : {err}')
-    
-    
-    ####----| Create master tagging process 
-    def create_master_tagging_process(self,record):
-        try:
-            
-            sql = "UPDATE `tbTaggingProcess` SET `tagging_status` = %s, `tagging_start_date` = %s WHERE `process_id` = %s "
-            self.cursor.execute(sql, ("Started", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), record['process_id'] ))
-            self.connection.commit()
-        except Exception as err:
-            self.logging.error(f'Error : create_master_tagging_process : {err}')
-               
-    
-    ####----| Update master tagging process 
-    def update_master_tagging_process(self,record):
-        try:
-            
-            sql = "UPDATE `tbTaggingProcess` SET `tagging_status` = %s, `tagging_message` = %s, `tagging_items_completed` = %s, `tagging_end_date` = %s WHERE `process_id` = %s "
-            self.cursor.execute(sql, (record['status'], record['message'], record['items_completed'], datetime.now().strftime("%Y-%m-%d %H:%M:%S"), record["process_id"] ))
-            self.connection.commit()
-        except Exception as err:
-            self.logging.error(f'Error : update_master_tagging_process : {err}')
-    
-    
-    ####----| Register tagging resorces 
-    def register_inventory_resources(self,resources):
-        try:
-            for resource in resources:
-                sql = "INSERT INTO `tbTaggingRecords` (`process_id`, `account_id`,`region`,`service`,`type`,`identifier`, `resource_name`,`arn`,`tag_key`,`tag_value`,`creation_date`,`tag_list`,`timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                self.cursor.execute(sql, (resource['process_id'], resource['account'], resource["region"], resource["service"],resource["type"],resource['identifier'],resource['resource_name'],resource['arn'],resource['tag_key'],resource['tag_value'], resource['created'],resource['tags'],datetime.now().strftime("%Y-%m-%d %H:%M:%S") ))
-            self.connection.commit()
-        except Exception as err:
-            self.logging.error(f'Error : register_inventory_resources : {err}')
-    
-    
-          
-    ####----| Get tagging resorces 
-    def get_tagging_resources(self,process_id,account,region,service):
-        try:
-            
-            sql = "SELECT * FROM tbTaggingRecords WHERE process_id = %s AND account_id = %s AND region = %s AND service = %s AND ( type = 2 OR type = 4 )"
-            #AND type = '2'
-            self.cursor.execute(sql, (process_id,account,region,service))
-            columns = self.cursor.description 
-            result = [{columns[index][0]:column for index, column in enumerate(value)} for value in self.cursor.fetchall()]
-            return result
-        except Exception as err:
-            self.logging.error(f'Error : get_tagging_resources : {err}')
-            return []
-            
-            
-    
 
 ####----|
 ####----| className : classAWSObject
@@ -151,19 +13,16 @@ class classDatabase():
 class classAWSConnector():
 
     ####----| Object Constructor
-    def __init__(self):
+    def __init__(self, params):
         self.account = ""
         self.aws_access_key_id = ""
         self.aws_secret_access_key = ""
         self.aws_session_token = ""
-        self.logging = classLogging('classAWSConnector')
-    
-        
-    
     
     ####----| Authentication
     def authentication(self,account):
         try:
+            logging.info(f'Account Authentication : {account}...')
             self.account = account
             self.aws_access_key_id = ""
             self.aws_secret_access_key = ""
@@ -179,13 +38,15 @@ class classAWSConnector():
             self.aws_session_token = credentials['SessionToken']
             return True
         except Exception as err:
-            self.logging.error(f'authentication : {err}')
+            logging.error(f'Error : {err}')
             return False
             
             
-    ####----| Get AWS Client
-    def get_aws_client(self,region,service):
+    ####----| Get AWS Resources
+    def tag_ec2_instances(self,region,service):
         try:
+        
+            logging.info(f'Region : {region}, Service : {service}')
             client = boto3.client(service,
                                     aws_access_key_id=self.aws_access_key_id,
                                     aws_secret_access_key=self.aws_secret_access_key,
@@ -194,391 +55,16 @@ class classAWSConnector():
             return client
             
         except Exception as err:
-            self.logging.error(f'get_aws_client : {err}')
+            logging.error(f'Error : {err}')
             return None
 
 
-    ####----| Create tag by service
-    def manage_tag_by_service(self,account,region,service,sub_service,resources,tags):
-        try:
-            self.authentication(account)
-            self.logging.info(f'Tagging  # Account : {account}, Region : {region}, Service : {sub_service}')
-            client = boto3.client(service,
-                                    aws_access_key_id=self.aws_access_key_id,
-                                    aws_secret_access_key=self.aws_secret_access_key,
-                                    aws_session_token=self.aws_session_token,
-                                    region_name=region)
-            
-            for resource in resources:
-                if sub_service == 'ec2' or sub_service == 'ebs_volume' or sub_service == 'ebs_snapshot' :
-                    print(resource)
-                    if resource['action'] == 2:
-                        client.create_tags(
-                                        Resources=[resource['identifier']],
-                                        Tags=tags
-                        )
-                    else:
-                        client.delete_tags(
-                                        Resources=[resource['identifier']],
-                                        Tags=tags
-                        )
-                elif sub_service == 'rds':
-                    client.add_tags_to_resource(
-                                ResourceName=resource['identifier'],
-                                Tags=tags
-                    )
-        
-        except Exception as err:
-            self.logging.error(f'manage_tag_by_service :  {err}')
-            return[]
-    
-            
-    
-    ####----| Get Active Sessions
-    def get_active_regions(self):
-        try:
-            # Create an EC2 client
-            client = boto3.client('ec2',
-                                        aws_access_key_id=self.aws_access_key_id,
-                                        aws_secret_access_key=self.aws_secret_access_key,
-                                        aws_session_token=self.aws_session_token,
-                                        region_name="us-east-1")
-                                        
-            # Get all available regions
-            regions = client.describe_regions()['Regions']
-            
-            # Filter out the opt-in regions
-            active_regions = [region['RegionName'] for region in regions if region['OptInStatus'] in ['opt-in-not-required', 'opted-in'] ]
-        
-            return active_regions
-            
-        except Exception as err:
-            self.logging.error(f'get_active_regions :  {err}')
-            return[]
-
-   
-    
- 
-            
 
 ####----|
 ####----| className : classTagger
 ####----|
 
 class classTagger():
-    
-    
-    ####----| Object Constructor
-    def __init__(self,process_id):
-        #self.process_id = datetime.now().strftime("%Y%m%d%H%M%S")
-        self.process_id = process_id
-        self.account = ""
-        self.aws_access_key_id = ""
-        self.aws_secret_access_key = ""
-        self.aws_session_token = ""
-        self.tag_key = ""
-        self.tag_value = ""
-        self.start_date = ""
-        self.filters = []
-        self.configuration = {}
-        self.logging = classLogging('classTagger')
-        self.logging.initialize(self.process_id)
-        self.database = classDatabase()
-        self.aws = classAWSConnector()
-        self.initialize()
-
-        
-    
-    ####----| Object Initialization
-    def initialize(self):
-        
-        try:
-            self.logging.info(f'Initialization...')
-            file = open('../server/configuration.json')
-            self.configuration = json.load(file)
-            file.close()
-            self.tag_key = self.configuration["TagKey"]
-            self.tag_value = self.configuration["TagValue"]
-            self.start_date = datetime.strptime(self.configuration["MapDate"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            self.filters = [{'Name': f'tag:{self.tag_key}', 'Values': [self.tag_value]}]
-        except Exception as err:
-            self.logging.error(f'initialize : {err}')
-    
-    
-    ###----| Get active regions
-    def get_active_regions(self):
-        
-        try:
-            self.logging.info(f'Getting active regions')
-            client = self.aws.get_aws_client(region,"ec2")
-            
-            regions = client.describe_regions()['Regions']
-            
-            active_regions = [region['RegionName'] for region in regions if region['OptInStatus'] in ['opt-in-not-required', 'opted-in'] ]
-        
-            return active_regions
-            
-        except Exception as err:
-            self.logging.error(f'get_active_regions :  {err}')
-            return[]
-            
-        
-    
-        
-    ####----| Start Inventory Process
-    def start_inventory_process(self):
-        items_completed = 0
-        try:
-            
-            # Create master inventory process
-            self.logging.info(f'Starting Inventory Process...')
-            self.database.create_master_inventory_process({ "process_id" : self.process_id, "configuration" : json.dumps(self.configuration) , "items_total" : len(self.configuration['Accounts']) })
-            
-            for account in self.configuration['Accounts']:
-                self.logging.info(f'Processing Account : {account}')
-                if (self.aws.authentication(account['id'])):
-                    active_regions = self.aws.get_active_regions()
-                    self.logging.info(f'Active regions : {active_regions}')
-                    for region in account['regions']:
-                        if region in active_regions:
-                            ## EC2 Resources
-                            self.get_inventory_ec2(account['id'],region)
-                            
-                            ## EBS Volumes
-                            self.get_inventory_ebs_volumes(account['id'],region)
-                            
-                            ## EBS Snapshots
-                            self.get_inventory_ebs_snapshots(account['id'],region)
-                            
-                        else:
-                            self.logging.info(f'The region : {region} is not active')
-                    
-                        time.sleep(1)
-                        
-                ## Update Progress
-                items_completed = items_completed + 1
-                self.database.update_master_inventory_process({ "process_id" : self.process_id, "status" : "In-Progress", "message" : f'Account {account["id"]} processed.', "items_completed" :  items_completed })
-            
-            self.database.update_master_inventory_process({ "process_id" : self.process_id, "status" : "Completed", "message" : f'{items_completed} accounts processed.', "items_completed" :  items_completed })
-            self.logging.info(f'Discovery # Process Completed.')
-            
-        except Exception as err:
-            self.logging.error(f'start_inventory_process :  {err}')
-        
-
-    ####----| Start Tagging Process
-    def start_tagging_process(self,process_id):
-        
-        try:
-            
-            self.process_id = process_id
-            self.logging.info(f'Starting Tagging Process...')
-            tags = [{'Key': self.tag_key, 'Value': self.tag_value}]
-            items_completed = 0    
-            
-            # List of services
-            services = [
-                        { "primary" : "ec2", "secondary" : "ec2" },
-                        { "primary" : "ec2", "secondary" : "ebs_volume" },
-                        { "primary" : "ec2", "secondary" : "ebs_snapshot" }
-                ]
-            
-            # Create master tagging process
-            self.database.create_master_tagging_process({ "process_id" : self.process_id })
-            
-            for account in self.configuration['Accounts']:
-                self.logging.info(f'Processing Account : {account}')
-                if (self.aws.authentication(account['id'])):
-                    active_regions = self.aws.get_active_regions()
-                    self.logging.info(f'Active regions : {active_regions}')
-                    for region in account['regions']:
-                        
-                        ### List of services
-                        for service in services:
-                            resources = []
-                            recordset = self.database.get_tagging_resources(self.process_id, account['id'], region, service['secondary'])
-                            for record in recordset:
-                                resources.append({ "identifier" : record['identifier'], "action" : record['type'] })
-                            self.aws.manage_tag_by_service(account['id'], region, service['primary'], service['secondary'], resources, tags)
-                        
-                else:
-                    self.logging.error(f'start_tagging_process : authentication account error')
-                    
-                ## Update Progress
-                items_completed = items_completed + 1
-                self.database.update_master_tagging_process({ "process_id" : self.process_id, "status" : "In-Progress", "message" : f'Account {account["id"]} processed.', "items_completed" :  items_completed })
-                
-            
-            self.database.update_master_tagging_process({ "process_id" : self.process_id, "status" : "Completed", "message" : f'{items_completed} accounts processed.', "items_completed" :  items_completed })
-            self.logging.info(f'Tagging # Process Completed.')
-            
-        except Exception as err:
-            self.logging.error(f'start_tagging_process :  {err}')
-        
-    
-
-           
-           
-    
-    
-    ###----| Function to validate tag exists
-    def tag_exists(self,tags):
-        
-        result = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
-        return result      
-    
-    
-
-    ####----| Function to tag EC2 instances
-    def get_inventory_ec2(self,account,region):
-        try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"ec2"}')
-            client = self.aws.get_aws_client(region,"ec2")
-        
-            paginator = client.get_paginator('describe_instances')
-            resources = []
-            
-            for page in paginator.paginate():
-                for reservation in page.get('Reservations', []):
-                    for instance in reservation.get('Instances', []):
-                        create_time = instance.get("LaunchTime")
-                        identifier = instance.get("InstanceId")
-                        arn = f'arn:aws:ec2:{region}:{account}:instance/{instance.get("InstanceId")}' 
-                        tags = instance.get("Tags")  if "Tags" in instance else []
-                        if create_time and create_time >= self.start_date:
-                            if not self.tag_exists(tags):
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ec2", "type" : "2", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ec2", "type" : "1", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ec2", "type" : "3", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-        
-            #Recording resources
-            self.database.register_inventory_resources(resources)
-            
-        
-        except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_ec2 : {err}')
-            
-    
-    
-    
-    ####----| Function to tag EBS volumen
-    def get_inventory_ebs_volumes(self,account,region):
-        try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"ebs_volumes"}')
-            client = self.aws.get_aws_client(region,"ec2")
-        
-            paginator = client.get_paginator('describe_volumes')
-            resources = []
-            
-            for page in paginator.paginate():
-                for resource in page.get('Volumes', []):
-                    create_time = resource.get("CreateTime")
-                    identifier = resource.get("VolumeId")
-                    arn = f'arn:aws:ec2:{region}:{account}:volume/{resource.get("VolumeId")}' 
-                    tags = resource.get("Tags")  if "Tags" in resource else []
-                    if create_time and create_time >= self.start_date:
-                        if not self.tag_exists(tags):
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_volume", "type" : "2", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_volume", "type" : "1", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                    else:
-                        resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_volume", "type" : "3", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-    
-            #Recording resources
-            self.database.register_inventory_resources(resources)
-            
-        
-        except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_ebs_volumes : {err}')
-            
-    
-    
-    ####----| Function to tag EBS Snapshot
-    def get_inventory_ebs_snapshots(self,account,region):
-        try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"ebs_snapshots"}')
-            client = self.aws.get_aws_client(region,"ec2")
-        
-            paginator = client.get_paginator('describe_snapshots')
-            resources = []
-            
-            for page in paginator.paginate(OwnerIds=['self']):
-                for resource in page.get('Snapshots', []):
-                    create_time = resource.get("StartTime")
-                    identifier = resource.get("SnapshotId")
-                    arn = f'arn:aws:ec2:{region}:{account}:snapshot/{resource.get("SnapshotId")}' 
-                    tags = resource.get("Tags")  if "Tags" in resource else []
-                    if create_time and create_time >= self.start_date:
-                        if not self.tag_exists(tags):
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_snapshot", "type" : "2", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_snapshot", "type" : "1", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                    else:
-                        resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_snapshot", "type" : "3", "identifier" : identifier, "resource_name" : identifier, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-    
-            #Recording resources
-            self.database.register_inventory_resources(resources)
-            
-        except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_ebs_snapshots : {err}')
-
-
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----|
-####----| className : classTagger
-####----|
-
-class classTaggerOld():
     
     
     ####----| Object Constructor
@@ -2232,19 +1718,9 @@ class classTaggerOld():
 
 ####----| Main Function
 def main():
-    
     # Start Tagging Process
-    process_type = sys.argv[1]
-    process_id = sys.argv[2]
-    tagger = classTagger(process_id)
-    
-    print(sys.argv)
-    
-    if process_type == "inventory":
-        tagger.start_inventory_process()
-    
-    if process_type == "tagging":
-        tagger.start_tagging_process(tagger.process_id)
+    tagger = classTagger({})
+    tagger.start_process()
     
     
     

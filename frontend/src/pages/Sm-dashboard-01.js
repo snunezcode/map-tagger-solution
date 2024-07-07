@@ -63,7 +63,7 @@ function Login() {
     
     // Metrics
     const [globalMetrics, setGlobalMetrics] = useState({ 
-                                                          summaryResources : { resourceTagged : [], resourceAdded : [], resourceSkipped : [] },
+                                                          summaryResources : { resourceTagged : [], resourceAdded : [], resourceSkipped : [], resourceRemoved : [] },
                                                           summaryServices : [], 
       
     });
@@ -74,11 +74,12 @@ function Login() {
                   {id: 'accounts',header: 'Accounts',cell: item => item.accounts,ariaLabel: createLabelFunction('accounts'),sortingField: 'accounts',},
                   {id: 'regions',header: 'Regions',cell: item => item.regions,ariaLabel: createLabelFunction('regions'),sortingField: 'regions',},
                   {id: 'total_resources',header: 'TotalResources',cell: item => item.total_resources,ariaLabel: createLabelFunction('total_resources'),sortingField: 'total_resources',},
-                  {id: 'total_resources_tagged',header: 'TotalResourcesTagged',cell: item => item.total_resources_tagged,ariaLabel: createLabelFunction('total_resources_tagged'),sortingField: 'total_resources_tagged',},
-                  {id: 'total_resources_added',header: 'TotalResourcesAdded',cell: item => item.total_resources_added,ariaLabel: createLabelFunction('total_resources_added'),sortingField: 'total_resources_added',},
-                  {id: 'total_resources_skipped',header: 'TotalResourcesSkipped',cell: item => item.total_resources_skipped,ariaLabel: createLabelFunction('total_resources_skipped'),sortingField: 'total_resources_skipped',},
-    ];
-    const visibleTableResources = ['process_id', 'regions', 'accounts',  'total_resources', 'total_resources_tagged', 'total_resources_added', 'total_resources_skipped'];
+                  {id: 'total_resources_tagged',header: 'Resources Already Tagged',cell: item => item.total_resources_tagged,ariaLabel: createLabelFunction('total_resources_tagged'),sortingField: 'total_resources_tagged',},
+                  {id: 'total_resources_skipped',header: 'Resources Skipped',cell: item => item.total_resources_skipped,ariaLabel: createLabelFunction('total_resources_skipped'),sortingField: 'total_resources_skipped',},
+                  {id: 'total_resources_added',header: 'Resources Added',cell: item => item.total_resources_added,ariaLabel: createLabelFunction('total_resources_added'),sortingField: 'total_resources_added',},
+                  {id: 'total_resources_removed',header: 'Resources Removed',cell: item => item.total_resources_removed,ariaLabel: createLabelFunction('total_resources_removed'),sortingField: 'total_resources_removed',},    ];
+
+    const visibleTableResources = ['process_id', 'regions', 'accounts',  'total_resources', 'total_resources_tagged', 'total_resources_added', 'total_resources_skipped', 'total_resources_removed'];
     const [itemsTableResources,setItemsTableResources] = useState([]);
     
     
@@ -156,7 +157,7 @@ function Login() {
     }
     
     
-     //-- Call API to gather process
+  //-- Call API to gather process
    async function gatherTaggerProcessDetails(){
         try{
         
@@ -175,7 +176,7 @@ function Login() {
     }
     
     
-    
+    //-- Function to Convert to Objects
     function convertToObjects(tagListString) {
       try {
         console.log(tagListString);
@@ -203,6 +204,38 @@ function Login() {
     }
 
     
+    
+    
+    //-- Function to Convert to CSV
+    const convertToCSV = (objArray) => {
+              const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+              let str = '';
+          
+              for (let i = 0; i < array.length; i++) {
+                let line = '';
+                for (let index in array[i]) {
+                  if (line !== '') line += ',';
+          
+                  line += array[i][index];
+                }
+                str += line + '\r\n';
+              }
+              return str;
+    };
+
+
+    //-- Function to export table to CSV
+    const exportDataToCsv = (data,fileName) => {
+            const csvData = new Blob([convertToCSV(data)], { type: 'text/csv' });
+            const csvURL = URL.createObjectURL(csvData);
+            const link = document.createElement('a');
+            link.href = csvURL;
+            link.download = `${fileName}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+    };
+  
     
     
     
@@ -286,7 +319,10 @@ function Login() {
                                             direction="horizontal"
                                             size="xs"
                                           >
-                                            <Button onClick={startTaggerProcess} variant={"primary"}>Launch Tagging Process</Button>
+                                            <Button variant={"primary"} href="/tagging/"
+                                            >
+                                              Launch Tagging Process
+                                            </Button>
                                             <Button onClick={gatherTaggerProcess} variant={"primary"}>Refresh</Button>
                                           </SpaceBetween>
                                         }
@@ -306,19 +342,24 @@ function Login() {
                                               height={"250"}
                                               series={[
                                                         {
-                                                          title: "ResourcesAdded",
+                                                          title: "Resources added",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceAdded']
                                                         },
                                                         {
-                                                          title: "ResourcesTagged",
+                                                          title: "Resources already tagged",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceTagged']
                                                         },
                                                         {
-                                                          title: "ResourcesSkipped",
+                                                          title: "Resources skipped",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceSkipped']
+                                                        },
+                                                        {
+                                                          title: "Resources removed",
+                                                          type: "bar",
+                                                          data: globalMetrics['summaryResources']?.['resourceRemoved']
                                                         },
                                                       ]}
                                           />      
@@ -364,6 +405,22 @@ function Login() {
                                   
                                 }
                               }
+                              tableActions={
+                                        <SpaceBetween
+                                          direction="horizontal"
+                                          size="xs"
+                                        >
+                                          <Button variant="primary" 
+                                                  onClick={() => {
+                                                    exportDataToCsv(itemsTableResourcesDetails,"test");
+                                                    }
+                                                  }
+                                          >
+                                            Export Resources 
+                                          </Button>
+                                        </SpaceBetween>
+                            }
+                              
                           />
                   </div>
                 

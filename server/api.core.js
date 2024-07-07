@@ -207,8 +207,9 @@ app.get("/api/aws/tagger/process/details", async (req, res) => {
 
     try {
         
-        var records = await dataObjectStore.getChildRecords({ process_id : params.process_id });
-        res.status(200).send({ csrfToken: req.csrfToken(), records : records })
+        var records = await dataObjectStore.getChildRecords({ process_id : params.process_id, type : params.type });
+        var summary = await dataObjectStore.getResourceSummaryByProcess({ process_id : params.process_id });
+        res.status(200).send({ csrfToken: req.csrfToken(), records : records, summary : summary })
         
     } catch(error) {
         console.log(error);
@@ -218,18 +219,45 @@ app.get("/api/aws/tagger/process/details", async (req, res) => {
 });
 
 
-//--++ API : GENERAL : Tagger Process - Start
-app.get("/api/aws/tagger/process/collection/start", async (req, res) => {
+
+//--++ API : GENERAL : Update resource action
+app.get("/api/aws/tagger/process/resource/update", async (req, res) => {
 
     // Token Validation
     var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
 
     if (cognitoToken.isValid === false)
         return res.status(511).send({ data: [], message : "Token is invalid"});
+ 
+    const params = req.query;
+
+    try {
+        
+        await dataObjectStore.updateResourceAction({ process_id : params.process_id, id : params.id, type : params.type });
+        res.status(200).send({ csrfToken: req.csrfToken(), action : "success"  });
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({ csrfToken: req.csrfToken(), action : "failed"  });
+    }
+    
+});
+
+
+//--++ API : GENERAL : Inventory Process - Start
+app.get("/api/aws/tagger/process/start", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+    
+    const params = req.query;
+    console.log(params);
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
     
     try {
         
-        taggerProcessObject.startProcess();
+        taggerProcessObject.startProcess(params.processType, params.processId);
         res.status(200).send({ csrfToken: req.csrfToken(), status : "started"} )
         
     } catch(error) {
@@ -237,6 +265,9 @@ app.get("/api/aws/tagger/process/collection/start", async (req, res) => {
         res.status(401).send({});
     }
 });
+
+
+
 
 
 //--++ API : GENERAL : Tagger Process - Status
@@ -259,6 +290,28 @@ app.get("/api/aws/tagger/process/collection/status", async (req, res) => {
     
 });
 
+
+//--++ API : GENERAL : Tagger Process - Progress
+app.get("/api/aws/tagger/process/collection/progress", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    const params = req.query;
+    
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+ 
+    try {
+        
+        res.status(200).send({ csrfToken: req.csrfToken(), status : await dataObjectStore.getProgress({ processId : params.processId } ) } )
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({});
+    }
+    
+});
 
 
 //--++ API : GENERAL : Application Update - Start
@@ -338,9 +391,9 @@ app.get("/api/aws/tagger/configuration/get", async (req, res) => {
 
 
 
-
 //--++ API : GENERAL : Save Configuration
-app.get("/api/aws/tagger/configuration/save", async (req, res) => {
+app.post("/api/aws/tagger/configuration/save", async (req, res) => {
+
 
     // Token Validation
     var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
@@ -348,10 +401,7 @@ app.get("/api/aws/tagger/configuration/save", async (req, res) => {
     if (cognitoToken.isValid === false)
         return res.status(511).send({ data: [], message : "Token is invalid"});
  
-    const params = req.query;
-    
-    console.log(params.configuration);
-    
+    var params = req.body.params;
     try {
         configurationObject.write(params.configuration)
           .then(() => {
@@ -367,8 +417,8 @@ app.get("/api/aws/tagger/configuration/save", async (req, res) => {
         res.status(401).send({});
     }
     
+    
 });
-
 
 
 //--++ API : GENERAL : Tagger Process - List log files
