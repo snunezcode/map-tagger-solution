@@ -210,8 +210,6 @@ class classAWSConnector():
                                     region_name=region)
             
             for resource in resources:
-                
-                
                 if sub_service == 'ec2' or sub_service == 'ebs_volume' or sub_service == 'ebs_snapshot' :
                     if resource['action'] == '2':
                         client.create_tags(
@@ -223,45 +221,16 @@ class classAWSConnector():
                                         Resources=[resource['identifier']],
                                         Tags=tags
                         )
-                
-                
-                elif sub_service == 'rds' or sub_service == 'rds_snapshot':
+                elif sub_service == 'rds':
                     if resource['action'] == '2':
                         client.add_tags_to_resource(
-                                    ResourceName=resource['arn'],
+                                    ResourceName=resource['identifier'],
                                     Tags=tags
                         )
                     elif resource['action'] == '4':
-                        client.remove_tags_from_resource(
-                                    ResourceName=resource['arn'],
-                                    TagKeys=[tags[0]['Key']]
-                        )
-                        
-                
-                elif sub_service == 'elbv2' :
-                    if resource['action'] == '2':
-                        client.add_tags(
-                                    ResourceArns=[resource['arn']],
+                        client.add_tags_to_resource(
+                                    ResourceName=resource['identifier'],
                                     Tags=tags
-                        )
-                        
-                    elif resource['action'] == '4':
-                        client.remove_tags(
-                                    ResourceArns=[resource['arn']],
-                                    TagKeys=[tags[0]['Key']]
-                        )
-                        
-                elif sub_service == 'efs' :
-                    if resource['action'] == '2':
-                        client.create_tags(
-                                    FileSystemId=resource['identifier'],
-                                    Tags=tags
-                        )
-                        
-                    elif resource['action'] == '4':
-                        client.delete_tags(
-                                    FileSystemId=resource['identifier'],
-                                    TagKeys=[tags[0]['Key']]
                         )
         
         except Exception as err:
@@ -389,15 +358,6 @@ class classTagger():
                             ## RDS Resources
                             self.get_inventory_rds(account['id'],region)
                             
-                            ## RDS Snapshots Resources
-                            self.get_inventory_rds_snapshots(account['id'],region)
-                            
-                            ## ELB Resources
-                            self.get_inventory_elbs(account['id'],region)
-                            
-                            ## EFS Resources
-                            self.get_inventory_efs(account['id'],region)
-                            
                             
                         else:
                             self.logging.info(f'The region : {region} is not active')
@@ -415,9 +375,6 @@ class classTagger():
             self.logging.error(f'start_inventory_process :  {err}')
         
 
-
-
-
     ####----| Start Tagging Process
     def start_tagging_process(self,process_id):
         
@@ -433,10 +390,7 @@ class classTagger():
                         { "primary" : "ec2", "secondary" : "ec2" },
                         { "primary" : "ec2", "secondary" : "ebs_volume" },
                         { "primary" : "ec2", "secondary" : "ebs_snapshot" },
-                        { "primary" : "rds", "secondary" : "rds" },
-                        { "primary" : "rds", "secondary" : "rds_snapshot" },
-                        { "primary" : "elbv2", "secondary" : "elbv2" },
-                        { "primary" : "efs", "secondary" : "efs" },
+                        { "primary" : "rds", "secondary" : "rds" }
                 ]
             
             # Create master tagging process
@@ -454,7 +408,7 @@ class classTagger():
                             resources = []
                             recordset = self.database.get_tagging_resources(self.process_id, account['id'], region, service['secondary'])
                             for record in recordset:
-                                resources.append({ "identifier" : record['identifier'], "action" : record['type'], "arn" : record['arn'] })
+                                resources.append({ "identifier" : record['identifier'], "action" : record['type'] })
                             self.aws.manage_tag_by_service(account['id'], region, service['primary'], service['secondary'], resources, tags)
                         
                 else:
@@ -493,7 +447,7 @@ class classTagger():
         return name
     
 
-    ####----| Function to get inventory for EC2 instances
+    ####----| Function to tag EC2 instances
     def get_inventory_ec2(self,account,region):
         try:
         
@@ -530,7 +484,7 @@ class classTagger():
     
     
     
-    ####----| Function to get inventory for EBS volumen
+    ####----| Function to tag EBS volumen
     def get_inventory_ebs_volumes(self,account,region):
         try:
         
@@ -564,41 +518,8 @@ class classTagger():
             self.logging.error(f'get_inventory_ebs_volumes : {err}')
             
     
-    ####----| Function to get inventory for EBS Snapshot
-    def get_inventory_ebs_snapshots(self,account,region):
-        try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"ebs_snapshots"}')
-            client = self.aws.get_aws_client(region,"ec2")
-        
-            paginator = client.get_paginator('describe_snapshots')
-            resources = []
-            
-            for page in paginator.paginate(OwnerIds=['self']):
-                for resource in page.get('Snapshots', []):
-                    create_time = resource.get("StartTime")
-                    identifier = resource.get("SnapshotId")
-                    arn = f'arn:aws:ec2:{region}:{account}:snapshot/{resource.get("SnapshotId")}' 
-                    tags = resource.get("Tags")  if "Tags" in resource else []
-                    resource_name = self.get_resource_name(tags)
-                    if create_time and create_time >= self.start_date:
-                        if not self.tag_exists(tags):
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_snapshot", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_snapshot", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                    else:
-                        resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ebs_snapshot", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
     
-            #Recording resources
-            self.database.register_inventory_resources(resources)
-            
-        except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_ebs_snapshots : {err}')
-            
-   
-   
-     ####----| Function to get inventory for RDS Instances
+    ####----| Function to tag RDS Instances
     def get_inventory_rds(self,account,region):
         try:
         
@@ -613,7 +534,8 @@ class classTagger():
                 for resource in instances:
                         create_time = resource.get("InstanceCreateTime")
                         identifier = resource.get("DBInstanceIdentifier")
-                        arn = resource['DBInstanceArn']
+                        arn = f'arn:aws:rds:{region}:{account}:db:{resource.get("DBInstanceIdentifier")}' 
+                        #tags = resource.get("Tags")  if "Tags" in resource else []
                         tags = client.list_tags_for_resource(ResourceName=resource['DBInstanceArn'])['TagList']
                         resource_name = self.get_resource_name(tags)
                         if create_time and create_time >= self.start_date:
@@ -632,125 +554,60 @@ class classTagger():
             #print(err)
             self.logging.error(f'get_inventory_rds : {err}')
             
-    
-    
-    
-    
-    
-    ####----| Function to get inventory for RDS Snapshots
-    def get_inventory_rds_snapshots(self,account,region):
+            
+            
+            
+            
+    '''
+    ####----| Function to tag RDS instances
+    def tag_rds_instances(self,region):
         try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"rds_snapshots"}')
-            client = self.aws.get_aws_client(region,"rds")
-        
-            paginator = client.get_paginator('describe_db_snapshots')
-            resources = []
+            logging.info(f'Region : {region}, Service : {"RDS"}')
+            rds_client = boto3.client('rds',
+                                        aws_access_key_id=self.aws_access_key_id,
+                                        aws_secret_access_key=self.aws_secret_access_key,
+                                        aws_session_token=self.aws_session_token,
+                                        region_name=region)
             
-            for page in paginator.paginate():
-                snapshots = page['DBSnapshots']
-                for resource in snapshots:
-                        create_time = resource.get("SnapshotCreateTime")
-                        identifier = resource.get("DBSnapshotIdentifier")
-                        arn = resource['DBSnapshotArn']
-                        tags = client.list_tags_for_resource(ResourceName=resource['DBSnapshotArn'])['TagList']
-                        resource_name = self.get_resource_name(tags)
-                        if create_time and create_time >= self.start_date:
-                            if not self.tag_exists(tags):
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds_snapshot", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds_snapshot", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+            rds_instances_with_tag = []
+            rds_instances_added_tag = []
+            rds_instances_skipped_tag = []
+            
+            # Create a paginator for RDS instances
+            paginator = rds_client.get_paginator('describe_db_instances')
+            page_iterator = paginator.paginate()
+        
+            for page in page_iterator:
+                db_instances = page['DBInstances']
+        
+                for rds_instance in db_instances:
+                    create_time = rds_instance.get("InstanceCreateTime")
+                    rds_tags = rds_client.list_tags_for_resource(ResourceName=rds_instance['DBInstanceArn'])['TagList']
+                    if create_time and create_time >= self.start_date:
+                        # Check if the instance already has the specified tag
+                        has_map_migrated_tag = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in rds_tags)
+                        if has_map_migrated_tag:
+                            rds_instances_with_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
                         else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds", "rds_snapshot" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-        
-            #Recording resources
-            self.database.register_inventory_resources(resources)
+                            rds_instances_added_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
+                            # Add the specified tag to the instance
+                            rds_client.add_tags_to_resource(
+                                ResourceName=rds_instance['DBInstanceArn'],
+                                Tags=[{'Key': self.tag_key, 'Value': self.tag_value}]
+                            )
+                    else:
+                        rds_instances_skipped_tag.append({ "name" : rds_instance['DBInstanceIdentifier'], "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(rds_tags) })
+                            
+            #Logging Tagging Resources
+            self.logging({ "region" : region, "service" : "rds", "type" : "1", "resources" : rds_instances_with_tag })
+            self.logging({ "region" : region, "service" : "rds", "type" : "2", "resources" : rds_instances_added_tag })
+            self.logging({ "region" : region, "service" : "rds", "type" : "3", "resources" : rds_instances_skipped_tag })    
             
-        
         except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_rds_snapshots : {err}')
-            
-    
+            logging.error(f'Region : {err}')
     
             
-            
-    ####----| Function to get inventory for ELB
-    def get_inventory_elbs(self,account,region):
-        try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"elbv2"}')
-            client = self.aws.get_aws_client(region,"elbv2")
-        
-            paginator = client.get_paginator('describe_load_balancers')
-            resources = []
-
-            for page in paginator.paginate():
-                resource_list = page.get('LoadBalancers', [])
-                for resource in resource_list:
-                        create_time = resource['CreatedTime']
-                        identifier = resource['LoadBalancerName']
-                        arn = resource['LoadBalancerArn']
-                        tags = client.describe_tags(ResourceArns=[arn])['TagDescriptions'][0]['Tags']
-                        resource_name = self.get_resource_name(tags)
-                        if create_time and create_time >= self.start_date:
-                            if not self.tag_exists(tags):
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "elbv2", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "elbv2", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds", "elbv2" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        
-            #Recording resources
-            self.database.register_inventory_resources(resources)
-            
-        
-        except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_elbs : {err}')
-    
-    
-    
-    
-            
-    
-    ####----| Function to get inventory for EFS
-    def get_inventory_efs(self,account,region):
-        try:
-        
-            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"efs"}')
-            client = self.aws.get_aws_client(region,"efs")
-        
-            paginator = client.get_paginator('describe_file_systems')
-            resources = []
-
-            for page in paginator.paginate():
-                resource_list = page.get('FileSystems', [])
-                for resource in resource_list:
-                        create_time = resource['CreationTime']
-                        identifier = resource['FileSystemId']
-                        arn = resource['FileSystemArn']
-                        tags = client.describe_tags(FileSystemId=identifier)['Tags']
-                        resource_name = self.get_resource_name(tags)
-                        if create_time and create_time >= self.start_date:
-                            if not self.tag_exists(tags):
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "efs", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "efs", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds", "efs" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                        
-            #Recording resources
-            self.database.register_inventory_resources(resources)
-            
-        
-        except Exception as err:
-            #print(err)
-            self.logging.error(f'get_inventory_efs : {err}')
-            
-    
-
-
+    '''
 
 
 ####----|

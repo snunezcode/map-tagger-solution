@@ -3,10 +3,7 @@ import Axios from 'axios'
 import { configuration, SideMainLayoutHeader,SideMainLayoutMenu } from './Configs';
 import { useNavigate } from "react-router-dom";
 
-import { applicationVersionUpdate, gatherLocalVersion } from '../components/Functions';
 import { createLabelFunction, customFormatNumberLong } from '../components/Functions';
-
-
 
 import SideNavigation from '@cloudscape-design/components/side-navigation';
 import AppLayout from '@cloudscape-design/components/app-layout';
@@ -14,17 +11,13 @@ import AppLayout from '@cloudscape-design/components/app-layout';
 import Flashbar from "@cloudscape-design/components/flashbar";
 import Container from "@cloudscape-design/components/container";
 import Select from "@cloudscape-design/components/select";
-
-
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import Button from "@cloudscape-design/components/button";
 import CustomHeader from "../components/Header";
 import CustomTable02 from "../components/Table02";
-
 import Wizard from "@cloudscape-design/components/wizard";
 import Link from "@cloudscape-design/components/link";
 import FormField from "@cloudscape-design/components/form-field";
-import Input from "@cloudscape-design/components/input";
 import Box from "@cloudscape-design/components/box";
 import ColumnLayout from "@cloudscape-design/components/column-layout";
 import Alert from "@cloudscape-design/components/alert";
@@ -33,8 +26,6 @@ import ProgressBar from "@cloudscape-design/components/progress-bar";
 import ButtonDropdown from "@cloudscape-design/components/button-dropdown";
 import ExpandableSection from "@cloudscape-design/components/expandable-section";
 import Modal from "@cloudscape-design/components/modal";
-
-
 
 import Header from "@cloudscape-design/components/header";
 import '@aws-amplify/ui-react/styles.css';
@@ -58,12 +49,7 @@ function Application() {
   
      let navigate = useNavigate(); 
     
-    //-- Application Version
-    const [messages, setMessages] = useState([]);
-    const [logFilesList, setLogFilesList] = useState([]);
-    const [selectedOption,setSelectedOption] = useState({});
-    var logFileName = useRef("");
-    
+    //-- Application variables
     const [activeStepIndex,setActiveStepIndex] = useState(0);
     const [checked, setChecked] = useState(false);
     var currentProcessId = useRef("");
@@ -93,6 +79,7 @@ function Application() {
                                 });
     
     const [statusChange, setStatusChange] = useState(false);
+    const [statusProcess, setStatusProcess] = useState({});
     
     //-- Add Header Cognito Token
     Axios.defaults.headers.common['x-csrf-token'] = sessionStorage.getItem("x-csrf-token");
@@ -104,21 +91,22 @@ function Application() {
     const [filterType,setFilterType] = useState({ label: "Tagged", value: 1 });
     var currentType = useRef(1);
     
-    //-- Table Messages
+    //-- Table Variables
     const columnsTable = [
                   {id: 'id',header: 'Identifier',cell: item => (<><Button variant="inline-link" onClick={() => { showTags(item); }}>{item.id}</Button></>),ariaLabel: createLabelFunction('id'),sortingField: 'id',},
                   {id: 'process_id',header: 'ProcessId',cell: item => item.process_id,ariaLabel: createLabelFunction('process_id'),sortingField: 'process_id',},
-                  {id: 'account_id',header: 'AccountId',cell: item => item.account_id,ariaLabel: createLabelFunction('account_id'),sortingField: 'account_id',},
+                  {id: 'account_id',header: 'Account',cell: item => item.account_id,ariaLabel: createLabelFunction('account_id'),sortingField: 'account_id',},
                   {id: 'region',header: 'Region',cell: item => item.region,ariaLabel: createLabelFunction('region'),sortingField: 'region',},
                   {id: 'service',header: 'Service',cell: item => item.service,ariaLabel: createLabelFunction('service'),sortingField: 'service',},
-                  {id: 'resource_name',header: 'Resource',cell: item => item.resource_name,ariaLabel: createLabelFunction('resource_name'),sortingField: 'resource_name',},
+                  {id: 'resource_name',header: 'Name',cell: item => item.resource_name,ariaLabel: createLabelFunction('resource_name'),sortingField: 'resource_name',},
+                  {id: 'identifier',header: 'ResourceId',cell: item => item.identifier,ariaLabel: createLabelFunction('identifier'),sortingField: 'identifier',},
                   {id: 'creation_date',header: 'LaunchTime',cell: item => item.creation_date,ariaLabel: createLabelFunction('creation_date'),sortingField: 'creation_date',},
                   {id: 'tag_key',header: 'TagName',cell: item => item.tag_key,ariaLabel: createLabelFunction('tag_key'),sortingField: 'tag_key',},
                   {id: 'tag_value',header: 'TagValue',cell: item => item.tag_value,ariaLabel: createLabelFunction('tag_value'),sortingField: 'tag_value',},
                   {id: 'type',header: 'State',cell: item => item.type_desc,ariaLabel: createLabelFunction('type'),sortingField: 'type',},
                   {id: 'timestamp',header: 'Timestamp',cell: item => item.timestamp,ariaLabel: createLabelFunction('timestamp'),sortingField: 'timestamp',},
     ];
-    const visibleContent = ['id', 'process_id', 'account_id', 'region',  'service', 'resource_name', 'creation_date', 'type'];
+    const visibleContent = ['id', 'account_id', 'region',  'service', 'resource_name', 'identifier', 'creation_date', 'type'];
     const [resources,setResources] = useState({ records : [], summary : {} });
     
     const columnsTableTags = [
@@ -130,7 +118,7 @@ function Application() {
     
   
                                                           
-  //-- Get resources discovered
+  //-- Show tag values
    async function showTags(item){
         
         try{
@@ -201,13 +189,13 @@ function Application() {
       
         if ( currentStep.current == 0 || currentStep.current == 2) {
             try {
-                setMessages([]);
                 var api_url = configuration["apps-settings"]["api-url"];
                 var params = { processId : currentProcessId.current };
                 Axios.get(`${api_url}/api/aws/tagger/process/collection/progress`,{
                           params: params, 
                       }).then((data)=>{
                          processState.current = data?.data?.status;
+                         setStatusProcess(data?.data?.status);
                   })
                   .catch((err) => {
                       console.log('Timeout API Call : /api/aws/tagger/process/collection/progress' );
@@ -268,8 +256,6 @@ function Application() {
             sessionStorage.setItem("x-csrf-token", data.csrfToken );
             processState.current = { taggingStatus : 1, ...processState.current };
             setStatusChange(2);
-            console.log(data);
-           
             
         }
         catch{
@@ -489,10 +475,10 @@ function Application() {
                                                           gatherInventoryResources();
                                                         }}
                                                         options={[
-                                                          { label: "Tagged", value: 1 },
+                                                          { label: "Already tagged", value: 1 },
                                                           { label: "Skipped", value: 3 },
-                                                          { label: "*New", value: 2 },
-                                                          { label: "*Remove", value: 4 }
+                                                          { label: "Added", value: 2 },
+                                                          { label: "Removed", value: 4 }
                                                         ]}
                                                     />
                                                             
@@ -633,7 +619,7 @@ function Application() {
                                       ]}
                                       
                                     />
-                                  
+                                    
                                   }
                                         
                                 </Container>
@@ -665,8 +651,8 @@ function Application() {
             <br/>
             <ColumnLayout columns={4} variant="text-grid">
               <div>
-                <Box variant="awsui-key-label">Resource Name</Box>
-                <div>{currentResource.current?.['resource_name']}</div>
+                <Box variant="awsui-key-label">Resource Identifier</Box>
+                <div>{currentResource.current?.['identifier']}</div>
               </div>
               <div>
                 <Box variant="awsui-key-label">Account</Box>
@@ -699,6 +685,7 @@ function Application() {
                   }
               />
           </Modal>
+          
                       
     </div>
   );

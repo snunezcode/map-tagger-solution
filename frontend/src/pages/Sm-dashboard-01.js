@@ -1,36 +1,26 @@
 import {useState,useEffect,useRef} from 'react'
-import { createSearchParams } from "react-router-dom";
 import Axios from 'axios'
 import { configuration, SideMainLayoutHeader,SideMainLayoutMenu, breadCrumbs } from './Configs';
-import { applicationVersionUpdate, getMatchesCountText, createLabelFunction, paginationLabels, pageSizePreference, collectionPreferencesProps, EmptyState, customFormatNumberShort, customFormatNumberLong, customFormatNumber } from '../components/Functions';
-
-import { useCollection } from '@cloudscape-design/collection-hooks';
-import {CollectionPreferences,Pagination } from '@cloudscape-design/components';
-import TextFilter from "@cloudscape-design/components/text-filter";
+import {  createLabelFunction, customFormatNumberShort } from '../components/Functions';
 
 import CustomHeader from "../components/Header";
 import AppLayout from "@cloudscape-design/components/app-layout";
 import SideNavigation from '@cloudscape-design/components/side-navigation';
 
-import Flashbar from "@cloudscape-design/components/flashbar";
-import { StatusIndicator } from '@cloudscape-design/components';
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import Button from "@cloudscape-design/components/button";
-import Table from "@cloudscape-design/components/table";
 import Header from "@cloudscape-design/components/header";
 import Box from "@cloudscape-design/components/box";
 import ColumnLayout from "@cloudscape-design/components/column-layout";
 import Container from "@cloudscape-design/components/container";
 import { SplitPanel } from '@cloudscape-design/components';
-
-import '@aws-amplify/ui-react/styles.css';
-
-
-
+import Tabs from "@cloudscape-design/components/tabs";
+import Select from "@cloudscape-design/components/select";
+import Modal from "@cloudscape-design/components/modal";
 import CustomTable02 from "../components/Table02";
 import NativeChartBar01 from '../components/NativeChartBar-01';
 
-
+import '@aws-amplify/ui-react/styles.css';
 
 
 export const splitPanelI18nStrings: SplitPanelProps.I18nStrings = {
@@ -48,18 +38,11 @@ export const splitPanelI18nStrings: SplitPanelProps.I18nStrings = {
 
 
 
-
-//-- Encryption
-var CryptoJS = require("crypto-js");
-
 function Login() {
     
-    //-- Application Messages
-    const [applicationMessage, setApplicationMessage] = useState([]);
-  
+    
     //-- Variable for Split Panels
     const [splitPanelShow,setsplitPanelShow] = useState(false);
-    const [selectedItems,setSelectedItems] = useState([{ identifier: "" }]);
     
     // Metrics
     const [globalMetrics, setGlobalMetrics] = useState({ 
@@ -71,33 +54,37 @@ function Login() {
     //-- Variables Table
     const columnsTableResources = [
                   {id: 'process_id',header: 'ProcessId',cell: item => item.process_id,ariaLabel: createLabelFunction('process_id'),sortingField: 'process_id',},
-                  {id: 'accounts',header: 'Accounts',cell: item => item.accounts,ariaLabel: createLabelFunction('accounts'),sortingField: 'accounts',},
-                  {id: 'regions',header: 'Regions',cell: item => item.regions,ariaLabel: createLabelFunction('regions'),sortingField: 'regions',},
+                  {id: 'inventory_start_date',header: 'Inventory Start',cell: item => item.inventory_start_date,ariaLabel: createLabelFunction('inventory_start_date'),sortingField: 'inventory_start_date',},
+                  {id: 'inventory_end_date',header: 'Inventory End',cell: item => item.inventory_end_date,ariaLabel: createLabelFunction('inventory_end_date'),sortingField: 'inventory_end_date',},
+                  {id: 'tagging_start_date',header: 'Tagging Start',cell: item => item.tagging_start_date,ariaLabel: createLabelFunction('tagging_start_date'),sortingField: 'tagging_start_date',},
+                  {id: 'tagging_end_date',header: 'Tagging End',cell: item => item.tagging_end_date,ariaLabel: createLabelFunction('tagging_end_date'),sortingField: 'tagging_end_date',},
                   {id: 'total_resources',header: 'TotalResources',cell: item => item.total_resources,ariaLabel: createLabelFunction('total_resources'),sortingField: 'total_resources',},
-                  {id: 'total_resources_tagged',header: 'Resources Already Tagged',cell: item => item.total_resources_tagged,ariaLabel: createLabelFunction('total_resources_tagged'),sortingField: 'total_resources_tagged',},
-                  {id: 'total_resources_skipped',header: 'Resources Skipped',cell: item => item.total_resources_skipped,ariaLabel: createLabelFunction('total_resources_skipped'),sortingField: 'total_resources_skipped',},
-                  {id: 'total_resources_added',header: 'Resources Added',cell: item => item.total_resources_added,ariaLabel: createLabelFunction('total_resources_added'),sortingField: 'total_resources_added',},
-                  {id: 'total_resources_removed',header: 'Resources Removed',cell: item => item.total_resources_removed,ariaLabel: createLabelFunction('total_resources_removed'),sortingField: 'total_resources_removed',},    ];
+                  {id: 'total_resources_tagged',header: 'Already Tagged',cell: item => customFormatNumberShort(item.total_resources_tagged,0),ariaLabel: createLabelFunction('total_resources_tagged'),sortingField: 'total_resources_tagged',},
+                  {id: 'total_resources_skipped',header: 'Skipped',cell: item => customFormatNumberShort(item.total_resources_skipped,0),ariaLabel: createLabelFunction('total_resources_skipped'),sortingField: 'total_resources_skipped',},
+                  {id: 'total_resources_added',header: 'Added',cell: item => customFormatNumberShort(item.total_resources_added,0),ariaLabel: createLabelFunction('total_resources_added'),sortingField: 'total_resources_added',},
+                  {id: 'total_resources_removed',header: 'Removed',cell: item => customFormatNumberShort(item.total_resources_removed,0),ariaLabel: createLabelFunction('total_resources_removed'),sortingField: 'total_resources_removed',},    ];
 
-    const visibleTableResources = ['process_id', 'regions', 'accounts',  'total_resources', 'total_resources_tagged', 'total_resources_added', 'total_resources_skipped', 'total_resources_removed'];
+    const visibleTableResources = ['process_id', 'inventory_start_date','tagging_end_date', 'total_resources', 'total_resources_tagged', 'total_resources_added', 'total_resources_skipped', 'total_resources_removed'];
     const [itemsTableResources,setItemsTableResources] = useState([]);
     
     
     const columnsTableResourcesDetails = [
-                  {id: 'id',header: 'Identifier',cell: item => item.id,ariaLabel: createLabelFunction('id'),sortingField: 'id',},
+                  {id: 'id',header: 'Identifier',cell: item => (<><Button variant="inline-link" onClick={() => { showTags(item); }}>{item.id}</Button></>),ariaLabel: createLabelFunction('id'),sortingField: 'id',},
                   {id: 'process_id',header: 'ProcessId',cell: item => item.process_id,ariaLabel: createLabelFunction('process_id'),sortingField: 'process_id',},
                   {id: 'account_id',header: 'AccountId',cell: item => item.account_id,ariaLabel: createLabelFunction('account_id'),sortingField: 'account_id',},
                   {id: 'region',header: 'Region',cell: item => item.region,ariaLabel: createLabelFunction('region'),sortingField: 'region',},
                   {id: 'service',header: 'Service',cell: item => item.service,ariaLabel: createLabelFunction('service'),sortingField: 'service',},
-                  {id: 'resource_name',header: 'Resource',cell: item => item.resource_name,ariaLabel: createLabelFunction('resource_name'),sortingField: 'resource_name',},
+                  {id: 'resource_name',header: 'Name',cell: item => item.resource_name,ariaLabel: createLabelFunction('resource_name'),sortingField: 'resource_name',},
+                  {id: 'identifier',header: 'ResourceId',cell: item => item.identifier,ariaLabel: createLabelFunction('identifier'),sortingField: 'identifier',},
                   {id: 'creation_date',header: 'LaunchTime',cell: item => item.creation_date,ariaLabel: createLabelFunction('creation_date'),sortingField: 'creation_date',},
                   {id: 'tag_key',header: 'TagName',cell: item => item.tag_key,ariaLabel: createLabelFunction('tag_key'),sortingField: 'tag_key',},
                   {id: 'tag_value',header: 'TagValue',cell: item => item.tag_value,ariaLabel: createLabelFunction('tag_value'),sortingField: 'tag_value',},
-                  {id: 'type',header: 'Type',cell: item => item.type_desc,ariaLabel: createLabelFunction('type'),sortingField: 'type',},
+                  {id: 'type',header: 'State',cell: item => item.type_desc,ariaLabel: createLabelFunction('type'),sortingField: 'type',},
                   {id: 'timestamp',header: 'Timestamp',cell: item => item.timestamp,ariaLabel: createLabelFunction('timestamp'),sortingField: 'timestamp',},
     ];
-    const visibleTableResourcesDetails = ['id', 'process_id', 'account_id', 'region',  'service', 'resource_name', 'creation_date', 'type'];
-    const [itemsTableResourcesDetails,setItemsTableResourcesDetails] = useState([]);
+    const visibleTableResourcesDetails = ['id', 'account_id', 'region',  'service', 'resource_name', 'identifier', 'creation_date', 'type'];
+    const [itemsTableResourcesDetails,setItemsTableResourcesDetails] = useState({ records : [], summary : {} });
+    
     
     
     const columnsTableTags = [
@@ -107,39 +94,28 @@ function Login() {
     const visibleTableTags = ['key', 'value'];
     const [itemsTableTags,setItemsTableTags] = useState([]);
     
-    var currentProcessId = useRef("");
+    
+    //-- Current Process selected
+    var currentProcess = useRef({});
+    const [visible, setVisible] = useState(false);
+    var currentResource = useRef({});
+    
     
     //-- Add Header Cognito Token
     Axios.defaults.headers.common['x-token-cognito'] = sessionStorage.getItem("x-token-cognito");
     Axios.defaults.withCredentials = true;
     
     
-    //-- Handle Click Events - Tagger Process
-    async function startTaggerProcess (){
-            try{
-            const { data } = await Axios.get(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/process/collection/start`);
-            sessionStorage.setItem("x-csrf-token", data.csrfToken );
-            console.log(data);
-            setApplicationMessage([
-                              {
-                                type: "info",
-                                content: "Tagger Process has been started, click on Refresh button to update page information. ",
-                                dismissible: true,
-                                dismissLabel: "Dismiss message",
-                                onDismiss: () => setApplicationMessage([]),
-                                id: "message_1"
-                              }
-            ]);
-        }
-        catch{
-          console.log('Timeout API error : /api/aws/tagger/process/collection/start');                  
-        }
-    };
+    //-- Filters
+    const [filterType,setFilterType] = useState({ label: "Tagged", value: 1 });
+    var currentType = useRef(1);
+    
+    
     
     
     
     //-- Call API to gather process
-   async function gatherTaggerProcess (){
+    async function gatherTaggerProcess (){
         
         try{
         
@@ -157,23 +133,28 @@ function Login() {
     }
     
     
-  //-- Call API to gather process
+
+    
+      
+  ///-- Call API to gather process details
    async function gatherTaggerProcessDetails(){
-        try{
         
-            var params = { process_id : currentProcessId.current };
+        try{
+          
+            var params = { process_id : currentProcess.current?.['process_id'] , type : currentType.current };
             const { data } = await Axios.get(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/process/details`,{
                       params: params, 
             });
-            sessionStorage.setItem("x-csrf-token", data.csrfToken );
-            setItemsTableResourcesDetails(data.records);
             
+            setItemsTableResourcesDetails(data.records);
             
         }
         catch{
           console.log('Timeout API error : /api/aws/tagger/process/details');                  
         }
     }
+    
+    
     
     
     //-- Function to Convert to Objects
@@ -224,6 +205,7 @@ function Login() {
     };
 
 
+
     //-- Function to export table to CSV
     const exportDataToCsv = (data,fileName) => {
             const csvData = new Blob([convertToCSV(data)], { type: 'text/csv' });
@@ -236,6 +218,25 @@ function Login() {
             document.body.removeChild(link);
     };
   
+    
+    
+    
+    
+    //-- Show tags for especifig resource
+    async function showTags(item){
+        
+        try{
+          
+            currentResource.current = item;
+            setItemsTableTags(convertToObjects(item?.['tag_list']));
+            setVisible(true);
+            
+        }
+        catch(err){
+          console.log('Timeout API error : /api/aws/tagger/process/details');                  
+        }
+    }
+    
     
     
     
@@ -273,7 +274,7 @@ function Login() {
                           header={
                           
                               <Header variant="h3">
-                                     {"Resource : " + selectedItems['resource_name']}
+                                     {"Process Identifier : " + currentProcess.current?.['process_id']}
                               </Header>
                             
                           } 
@@ -283,37 +284,115 @@ function Login() {
                                         }
                                       }
                       >
-                        
-                        <CustomTable02
-                              columnsTable={columnsTableTags}
-                              visibleContent={visibleTableTags}
-                              dataset={itemsTableTags}
-                              title={"Tags"}
-                              description={""}
-                              pageSize={10}
-                              onSelectionItem={( item ) => {
-                                  
-                                }
+                        <Tabs
+                            tabs={[
+                              {
+                                label: "General information",
+                                id: "first",
+                                content: 
+                                        <div>
+                                          <ColumnLayout columns={4} variant="text-grid">
+                                            <div>
+                                              <Box variant="awsui-key-label">Inventory Start</Box>
+                                              <div>{currentProcess.current?.['inventory_start_date']}</div>
+                                            </div>
+                                            <div>
+                                              <Box variant="awsui-key-label">Inventory End</Box>
+                                              <div>{currentProcess.current?.['inventory_end_date']}</div>
+                                            </div>
+                                            <div>
+                                              <Box variant="awsui-key-label">Tagging Start</Box>
+                                              <div>{currentProcess.current?.['tagging_start_date']}</div>
+                                            </div>
+                                            <div>
+                                              <Box variant="awsui-key-label">Tagging End</Box>
+                                              <div>{currentProcess.current?.['tagging_end_date']}</div>
+                                            </div>
+                                            
+                                            <div>
+                                              <Box variant="awsui-key-label">Resources already tagged</Box>
+                                              <div>{currentProcess.current?.['total_resources_tagged']}</div>
+                                            </div>
+                                            <div>
+                                              <Box variant="awsui-key-label">Resources added</Box>
+                                              <div>{currentProcess.current?.['total_resources_added']}</div>
+                                            </div>
+                                            <div>
+                                              <Box variant="awsui-key-label">Resources skipped</Box>
+                                              <div>{currentProcess.current?.['total_resources_skipped']}</div>
+                                            </div>
+                                            <div>
+                                              <Box variant="awsui-key-label">Resources removed</Box>
+                                              <div>{currentProcess.current?.['total_resources_removed']}</div>
+                                            </div>
+                                          </ColumnLayout>
+                                          <br/>
+                                          <Box variant="awsui-key-label">Configuration</Box>
+                                          <div>{currentProcess.current?.['configuration']}</div>
+                                      </div>
+                              },
+                              {
+                                label: "Resources",
+                                id: "second",
+                                content: 
+                                        <div>  
+                                            <CustomTable02
+                                              columnsTable={columnsTableResourcesDetails}
+                                              visibleContent={visibleTableResourcesDetails}
+                                              dataset={itemsTableResourcesDetails}
+                                              title={"Resources"}
+                                              pageSize={10}
+                                              onSelectionItem={( item ) => {
+                                                  
+                                                }
+                                              }
+                                              extendedTableProperties = {
+                                                  { variant : "borderless" }
+                                              }
+                                              tableActions={
+                                                        <SpaceBetween
+                                                          direction="horizontal"
+                                                          size="xs"
+                                                        >
+                                                          <Select
+                                                            selectedOption={filterType}
+                                                            onChange={({ detail }) => {
+                                                              setFilterType(detail.selectedOption);
+                                                              currentType.current = detail.selectedOption.value;
+                                                              gatherTaggerProcessDetails();
+                                                            }}
+                                                            options={[
+                                                              { label: "Already tagged", value: 1 },
+                                                              { label: "Skipped", value: 3 },
+                                                              { label: "Added", value: 2 },
+                                                              { label: "Removed", value: 4 }
+                                                            ]}
+                                                          />
+                                                          <Button variant="primary" 
+                                                                  onClick={() => {
+                                                                    exportDataToCsv(itemsTableResourcesDetails,"test");
+                                                                    }
+                                                                  }
+                                                          >
+                                                            Export Resources 
+                                                          </Button>
+                                                        </SpaceBetween>
+                                            }
+                                            />
+                                        </div>
                               }
-                              extendedTableProperties = {
-                                  { variant : "borderless" }
-                              }
+                            ]}
                           />
-                        
-                        
-                        
                             
                       </SplitPanel>
             }
             content={
                       <div style={{"padding" : "1em"}}>
-                          <Flashbar items={applicationMessage} />
                           <br/>
                           <Container
                             header={
                                       <Header
                                         variant="h2"
-                                        description='Summary of tagged resources[by process id]'
                                         actions={
                                           <SpaceBetween
                                             direction="horizontal"
@@ -336,28 +415,29 @@ function Login() {
                                 <tr>  
                                     <td valign="middle" style={{"width":"50%", "padding-right": "2em", "text-align": "center"}}>  
                                           <NativeChartBar01 
+                                              title={"Total resources by tag action"}
                                               extendedProperties = {
                                                   { hideFilter : true } 
                                               }
                                               height={"250"}
                                               series={[
                                                         {
-                                                          title: "Resources added",
+                                                          title: "Added",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceAdded']
                                                         },
                                                         {
-                                                          title: "Resources already tagged",
+                                                          title: "Already tagged",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceTagged']
                                                         },
                                                         {
-                                                          title: "Resources skipped",
+                                                          title: "Skipped",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceSkipped']
                                                         },
                                                         {
-                                                          title: "Resources removed",
+                                                          title: "Removed",
                                                           type: "bar",
                                                           data: globalMetrics['summaryResources']?.['resourceRemoved']
                                                         },
@@ -366,6 +446,7 @@ function Login() {
                                     </td>
                                     <td valign="middle" style={{"width":"50%", "padding-right": "2em", "text-align": "center"}}>  
                                           <NativeChartBar01 
+                                              title={"Total resources by service type"}
                                               extendedProperties = {
                                                   { hideFilter : true } 
                                               }
@@ -385,48 +466,69 @@ function Login() {
                               description={""}
                               pageSize={10}
                               onSelectionItem={( item ) => {
-                                  currentProcessId.current = item[0]?.["process_id"];
+                                  currentProcess.current = item[0];
+                                  setsplitPanelShow(true);
                                   gatherTaggerProcessDetails();
                                 }
                               }
                           />
-                          <br/>
-                          <CustomTable02
-                              columnsTable={columnsTableResourcesDetails}
-                              visibleContent={visibleTableResourcesDetails}
-                              dataset={itemsTableResourcesDetails}
-                              title={"Resources - " + currentProcessId.current}
-                              description={""}
-                              pageSize={10}
-                              onSelectionItem={( item ) => {
-                                  setSelectedItems(item[0]);
-                                  setsplitPanelShow(true);
-                                  setItemsTableTags(convertToObjects(item[0]?.['tag_list']));
-                                  
-                                }
-                              }
-                              tableActions={
-                                        <SpaceBetween
-                                          direction="horizontal"
-                                          size="xs"
-                                        >
-                                          <Button variant="primary" 
-                                                  onClick={() => {
-                                                    exportDataToCsv(itemsTableResourcesDetails,"test");
-                                                    }
-                                                  }
-                                          >
-                                            Export Resources 
-                                          </Button>
-                                        </SpaceBetween>
-                            }
-                              
-                          />
+                          
                   </div>
                 
             }
           />
         
+        
+        <Modal
+            onDismiss={() => setVisible(false)}
+            visible={visible}
+            size={"large"}
+            footer={
+              <Box float="right">
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button variant="primary" onClick={() => setVisible(false)} >Close</Button>
+                </SpaceBetween>
+              </Box>
+            }
+            header={"Resource Identifier: " + String(currentResource.current.id)}
+          >
+            <br/>
+            <ColumnLayout columns={4} variant="text-grid">
+              <div>
+                <Box variant="awsui-key-label">Resource Identifier</Box>
+                <div>{currentResource.current?.['identifier']}</div>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">Account</Box>
+                <div>{currentResource.current?.['account_id']}</div>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">Region</Box>
+                <div>{currentResource.current?.['region']}</div>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">State</Box>
+                <div>{currentResource.current?.['type_desc']}</div>
+              </div>
+            </ColumnLayout>
+            <br/>
+            <br/>
+            <CustomTable02
+                  columnsTable={columnsTableTags}
+                  visibleContent={visibleTableTags}
+                  dataset={itemsTableTags}
+                  title={"Tags"}
+                  description={""}
+                  pageSize={10}
+                  onSelectionItem={( item ) => {
+                      
+                    }
+                  }
+                  extendedTableProperties = {
+                      { variant : "borderless" }
+                  }
+              />
+          </Modal>
     </div>
   );
 }

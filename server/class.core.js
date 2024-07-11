@@ -35,42 +35,72 @@ class classDataStore {
         #connection = {};
         
         ///-- Database Queries
-        #sql_statement_tagger_process_master = `select a.process_id, b.accounts,c.regions, a.total as total_resources, a.total_type_1 as total_resources_tagged, a.total_type_2 as total_resources_added,a.total_type_3 as total_resources_skipped, a.total_type_4 as total_resources_removed
+        #sql_statement_tagger_process_master = `select 
+                                                   a.process_id, 
+                                                   a.inventory_status,
+                                                   a.inventory_start_date,
+                                                   a.inventory_end_date,
+                                                   a.tagging_status,
+                                                   a.tagging_start_date,
+                                                   a.tagging_end_date,
+                                                   b.total as total_resources, 
+                                                   b.total_type_1 as total_resources_tagged, 
+                                                   b.total_type_2 as total_resources_added,
+                                                   b.total_type_3 as total_resources_skipped, 
+                                                   b.total_type_4 as total_resources_removed,
+                                                   a.configuration
                                                 from
+                                                tbTaggingProcess a,
                                                 (
                                                    select process_id, count(*) as total, sum( case when type=1 then 1 else 0 end) as total_type_1,sum( case when type=2 then 1 else 0 end) as total_type_2,sum( case when type=3 then 1 else 0 end) as total_type_3, sum( case when type=4 then 1 else 0 end) as total_type_4 from tbTaggingRecords group by process_id
-                                                ) a,
-                                                (
-                                                   select process_id, GROUP_CONCAT(account_id) as accounts from (select process_id, account_id from tbTaggingRecords group by process_id,account_id) a group by process_id
-                                                ) b,
-                                                (
-                                                   select process_id, GROUP_CONCAT(region) as regions from (select process_id, region from tbTaggingRecords group by process_id,region) a group by process_id
-                                                ) c
+                                                ) b
                                                 where 
-                                                a.process_id=b.process_id
-                                                and
-                                                a.process_id=c.process_id
+                                                   a.tagging_status = 'Completed'
+                                                   and
+                                                   a.process_id=b.process_id
                                                 order by 
-                                                a.process_id desc`;
+                                                   a.process_id desc`;
                                                 
-        #sql_statement_tagger_process_details = "select id,process_id,account_id,region,service,type,case when type=1 then 'Tagged' when type=2 then '*New' when type=3 then 'Skipped' when type=4 then '*Remove' end as type_desc,creation_date,resource_name,timestamp,tag_key,tag_value,tag_list from tbTaggingRecords where process_id = ? and type = ?";
+        #sql_statement_tagger_process_details = "select id,process_id,account_id,region,service,type,case when type=1 then 'Already tagged' when type=2 then 'Added' when type=3 then 'Skipped' when type=4 then 'Removed' end as type_desc,creation_date,resource_name,identifier,timestamp,tag_key,tag_value,tag_list from tbTaggingRecords where process_id = ? and type = ?";
         
-        #sql_statement_summary_resources = `select a.process_id, a.total_type_1 as total_resources_tagged, a.total_type_2 as total_resources_added, a.total_type_3 as total_resources_skipped, a.total_type_4 as total_resources_removed
-                                            from
-                                            (
-                                               select process_id, count(*) as total, sum( case when type=1 then 1 else 0 end) as total_type_1,sum( case when type=2 then 1 else 0 end) as total_type_2,sum( case when type=3 then 1 else 0 end) as total_type_3, sum( case when type=4 then 1 else 0 end) as total_type_4 from tbTaggingRecords group by process_id
-                                            ) a
-                                            order by 
-                                            a.process_id desc
-                                            limit 10`;
+        #sql_statement_summary_resources = `select 
+                                                    a.process_id, 
+                                                    sum( case when b.type=1 then 1 else 0 end) as total_resources_tagged,
+                                                    sum( case when b.type=2 then 1 else 0 end) as total_resources_added,
+                                                    sum( case when b.type=3 then 1 else 0 end) as total_resources_skipped, 
+                                                    sum( case when b.type=4 then 1 else 0 end) as total_resources_removed 
+                                                from
+                                                    ( select process_id from tbTaggingProcess a where a.inventory_status = 'Completed' and a.tagging_status = 'Completed' order by a.process_id desc limit 10) a,
+                                                    tbTaggingRecords b
+                                                where 
+                                                    a.process_id = b.process_id
+                                                group by 
+                                                    a.process_id
+                                                order by 
+                                                    a.process_id desc
+                                           `;
         #sql_statement_summary_service = `select 
-                                                a.process_id, a.service, count(*) as total 
+                                                a.process_id, b.service, count(*) as total 
                                           from 
-                                                tbTaggingRecords a,
-                                                (select process_id from tbTaggingRecords group by process_id order by process_id desc limit 10) b
+                                                (
+                                                select 
+                                                    a.process_id 
+                                                from 
+                                                    tbTaggingProcess a,
+                                                    tbTaggingRecords b
+                                                where 
+                                                    a.inventory_status = 'Completed'
+                                                    and
+                                                    a.tagging_status = 'Completed'
+                                                    and
+                                                    a.process_id = b.process_id
+                                                group by a.process_id 
+                                                order by a.process_id desc limit 10
+                                                ) a, tbTaggingRecords b
                                           where
                                                 a.process_id = b.process_id
-                                          group by a.process_id, a.service order by a.process_id desc`;
+                                          group by 
+                                                a.process_id, b.service order by a.process_id desc`;
                                           
         
         #sql_statement_process_progress = `select 
