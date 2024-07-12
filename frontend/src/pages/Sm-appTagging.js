@@ -561,8 +561,14 @@ function Application() {
                                           statusIconAriaLabel="Info"
                                           header="The following resource(s) will be tagged as part MAP Program"
                                         >
-                                          MAP specialized workloads is a scaling mechanism designed to accelerate migration and modernization of on-premises workloads to AWS.
-                                          
+                                          <br/>
+                                          The use of MAP Tagger does not alter the terms of the Migration Acceleration Program (MAP) previously agreed and signed by the customer and AWS. By utilizing MAP Tagger, the user agrees to adhere to proper usage guidelines and acknowledges that any misuse is solely their responsibility. Any misuse may result in consequences including cancellation of current engagement.
+                                          <br/>
+                                          <br/>
+                                          Migration Acceleration Program (MAP) and MAP Tagger should only be used for previously stipulated migration and/or modernization workloads.
+                                          <br/>
+                                          <br/>
+                                          If you are unsure about the MAP terms signed please reach out to your AWS Account Team before proceeding.
                                           <br/>
                                           <br/>
                                           <Checkbox
