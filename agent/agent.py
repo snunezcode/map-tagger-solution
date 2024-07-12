@@ -264,6 +264,50 @@ class classAWSConnector():
                                     TagKeys=[tags[0]['Key']]
                         )
         
+        
+                elif sub_service == 'fsx':
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    ResourceARN=resource['arn'],
+                                    Tags=tags
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    ResourceARN=resource['arn'],
+                                    TagKeys=[tags[0]['Key']]
+                        )
+
+
+                elif sub_service == 'dynamodb':
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    ResourceArn=resource['arn'],
+                                    Tags=tags
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    ResourceArn=resource['arn'],
+                                    TagKeys=[tags[0]['Key']]
+                        )
+                        
+                        
+                elif sub_service == 'lambda':
+                    print(tags)
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    Resource=resource['arn'],
+                                    Tags={ tags[0]['Key'] :  tags[0]['Value'] }
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    Resource=resource['arn'],
+                                    TagKeys=[tags[0]['Key']]
+                        )
+                        
+                
         except Exception as err:
             self.logging.error(f'manage_tag_by_service :  {err}')
             return[]
@@ -398,6 +442,15 @@ class classTagger():
                             ## EFS Resources
                             self.get_inventory_efs(account['id'],region)
                             
+                            ## FSX Resources
+                            self.get_inventory_fsx(account['id'],region)
+                            
+                            ## DynamoDB Resources
+                            self.get_inventory_dynamodb(account['id'],region)
+                            
+                            ## Lambda Resources
+                            self.get_inventory_lambda(account['id'],region)
+                            
                             
                         else:
                             self.logging.info(f'The region : {region} is not active')
@@ -437,6 +490,9 @@ class classTagger():
                         { "primary" : "rds", "secondary" : "rds_snapshot" },
                         { "primary" : "elbv2", "secondary" : "elbv2" },
                         { "primary" : "efs", "secondary" : "efs" },
+                        { "primary" : "fsx", "secondary" : "fsx" },
+                        { "primary" : "dynamodb", "secondary" : "dynamodb" },
+                        { "primary" : "lambda", "secondary" : "lambda" },
                 ]
             
             # Create master tagging process
@@ -491,6 +547,14 @@ class classTagger():
             if tag["Key"] == 'Name' or tag["Key"] == 'name':
                 name = tag["Value"]
         return name
+    
+    
+    def tag_exists_dict(self,tags):
+        if tags.get(self.tag_key) == self.tag_value:
+            True
+        else:
+            False
+        
     
 
     ####----| Function to get inventory for EC2 instances
@@ -661,7 +725,7 @@ class classTagger():
                             else:
                                 resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds_snapshot", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                         else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds", "rds_snapshot" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds_snapshot", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
         
             #Recording resources
             self.database.register_inventory_resources(resources)
@@ -699,7 +763,7 @@ class classTagger():
                             else:
                                 resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "elbv2", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                         else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds", "elbv2" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "elbv2", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                         
             #Recording resources
             self.database.register_inventory_resources(resources)
@@ -738,7 +802,7 @@ class classTagger():
                             else:
                                 resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "efs", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                         else:
-                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "rds", "efs" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "efs", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                         
             #Recording resources
             self.database.register_inventory_resources(resources)
@@ -748,10 +812,121 @@ class classTagger():
             #print(err)
             self.logging.error(f'get_inventory_efs : {err}')
             
+            
+            
     
+    ####----| Function to get inventory for FSX
+    def get_inventory_fsx(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"fsx"}')
+            client = self.aws.get_aws_client(region,"fsx")
+        
+            paginator = client.get_paginator('describe_file_systems')
+            resources = []
+
+            for page in paginator.paginate():
+                resource_list = page.get('FileSystems', [])
+                for resource in resource_list:
+                        create_time = resource['CreationTime']
+                        identifier = resource['FileSystemId']
+                        arn = resource['ResourceARN']
+                        tags = client.list_tags_for_resource(ResourceARN=arn)['Tags']
+                        resource_name = self.get_resource_name(tags)
+                        if create_time and create_time >= self.start_date:
+                            if not self.tag_exists(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "fsx", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "fsx", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "fsx", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            #print(err)
+            self.logging.error(f'get_inventory_fsx : {err}')
+    
+    
+    
+    
+    
+    
+    ####----| Function to get inventory for DynamoDB
+    def get_inventory_dynamodb(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"dynamodb"}')
+            client = self.aws.get_aws_client(region,"dynamodb")
+        
+            paginator = client.get_paginator('list_tables')
+            resources = []
+
+            for page in paginator.paginate():
+                resource_list = page.get('TableNames', [])
+                for resource in resource_list:
+                        table_info = client.describe_table(TableName=resource)['Table']
+                        create_time = table_info['CreationDateTime']
+                        identifier = resource
+                        arn = table_info['TableArn']
+                        tags = client.list_tags_of_resource(ResourceArn=arn)['Tags']
+                        resource_name = self.get_resource_name(tags)
+                        if create_time and create_time >= self.start_date:
+                            if not self.tag_exists(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "dynamodb", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "dynamodb", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "dynamodb", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            #print(err)
+            self.logging.error(f'get_inventory_dynamodb : {err}')
 
 
 
+
+
+
+    ####----| Function to get inventory for Lambda
+    def get_inventory_lambda(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"lambda"}')
+            client = self.aws.get_aws_client(region,"lambda")
+        
+            resource_list = client.list_functions()['Functions']
+            resources = []
+
+            for resource in resource_list:
+                    last_modified_str = resource['LastModified']
+                    last_modified_str = last_modified_str.split(".")[0]  # Remove milliseconds and timezone offset
+                    create_time = datetime.strptime(last_modified_str, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+                    identifier = resource['FunctionName']
+                    arn = resource['FunctionArn']
+                    tags = client.list_tags(Resource=arn)['Tags']
+                    resource_name = resource['FunctionName']
+                    if create_time and create_time >= self.start_date:
+                        if not self.tag_exists_dict(tags):
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "lambda", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "lambda", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                    else:
+                        resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "lambda", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                    
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            #print(err)
+            self.logging.error(f'get_inventory_lambda : {err}')
 
 ####----|
 ####----|
