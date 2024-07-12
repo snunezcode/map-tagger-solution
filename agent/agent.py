@@ -363,6 +363,34 @@ class classAWSConnector():
                                     resourceArn=resource['arn'],
                                     tagKeys=[tags[0]['Key']]
                         )
+                        
+                
+                elif sub_service == 'ecs':
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    resourceArn=resource['arn'],
+                                    tags=[{ 'key' : tags[0]['Key'], 'value' : tags[0]['Value']  }]
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    resourceArn=resource['arn'],
+                                    tagKeys=[tags[0]['Key']]
+                        )
+                        
+                
+                elif sub_service == 'emr':
+                    if resource['action'] == '2':
+                        client.add_tags(
+                                ResourceId=resource['identifier'],
+                                Tags=tags
+                            )
+                        
+                    elif resource['action'] == '4':
+                        client.remove_tags(
+                                    ResourceId=resource['identifier'],
+                                    TagKeys=[tags[0]['Key']]
+                        )
                 
         except Exception as err:
             self.logging.error(f'manage_tag_by_service :  {err}')
@@ -523,10 +551,17 @@ class classTagger():
                             
                             ## Backup Plans Resources
                             self.get_inventory_ecr(account['id'],region)
-                            '''
                             
                             ## EKS Resources
                             self.get_inventory_eks_clusters(account['id'],region)
+                            
+                            ## ECS Resources
+                            self.get_inventory_ecs_clusters(account['id'],region)
+                            
+                            '''
+                            
+                            ## EMR Resources
+                            self.get_inventory_emr_clusters(account['id'],region)
                             
                             
                             
@@ -578,6 +613,8 @@ class classTagger():
                         { "primary" : "backup", "secondary" : "backup_plan" },
                         { "primary" : "ecr", "secondary" : "ecr" },
                         { "primary" : "eks", "secondary" : "eks" },
+                        { "primary" : "ecs", "secondary" : "ecs" },
+                        { "primary" : "emr", "secondary" : "emr" },
                 ]
             
             # Create master tagging process
@@ -650,15 +687,12 @@ class classTagger():
         
     
     
-    ###----| Function to convert dictinary to list
-    def tags_dict_to_list(self,tags):
-        if isinstance(tags, list):
-            return tags
-        elif isinstance(tags, dict):
-            return [{'Key': k, 'Value': v} for k, v in tags.items()]
-        else:
-            return []
-
+    ###----| Function to convert tag keys
+    def tag_key_convertion(self,tags,key,value):
+        tag_convertion = []
+        for tag in tags:
+            tag_convertion.append({ 'Key' : tag[key], 'Value' : tag[value] })
+        return tag_convertion
 
 
 
@@ -1269,6 +1303,72 @@ class classTagger():
             self.logging.error(f'get_inventory_eks_clusters : {err}')
     
     
+    
+    
+    ####----| Function to get ECS Clusters
+    def get_inventory_ecs_clusters(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"ecs"}')
+            client = self.aws.get_aws_client(region,"ecs")
+        
+            paginator = client.get_paginator('list_clusters')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('clusterArns', [])
+                for resource in resource_list:
+                        cluster_info = client.describe_clusters(clusters=[resource])['clusters'][0]
+                        create_time = ""
+                        identifier = cluster_info['clusterName']
+                        arn = cluster_info['clusterArn']
+                        tags = client.list_tags_for_resource(resourceArn=arn)['tags']
+                        tags = self.tag_key_convertion(tags,'key','value')
+                        resource_name = self.get_resource_name(tags)
+                        if not self.tag_exists(tags):
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ecs", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time, "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "ecs", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time, "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_ecs_clusters : {err}')
+    
+    
+    
+    ####----| Function to get EMR Clusters
+    def get_inventory_emr_clusters(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"emr"}')
+            client = self.aws.get_aws_client(region,"emr")
+        
+            paginator = client.get_paginator('list_clusters')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('Clusters', [])
+                for resource in resource_list:
+                        status = resource['Status']['State']
+                        if status == 'STARTING' or status ==  'BOOTSTRAPPING' or status == 'RUNNING' or status == 'WAITING':
+                            create_time = resource['Status']['Timeline']['CreationDateTime']
+                            identifier = resource['Id']
+                            arn = resource['ClusterArn']
+                            resource_name = resource['Name']
+                            cluster_info = client.describe_cluster(ClusterId=identifier)['Cluster']
+                            tags = cluster_info['Tags']
+                            if not self.tag_exists(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "emr", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time, "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "emr", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time, "tags" : json.dumps(tags) })
+                            
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_emr_clusters : {err}')
     
     
     
