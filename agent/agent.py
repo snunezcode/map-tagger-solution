@@ -212,7 +212,7 @@ class classAWSConnector():
             for resource in resources:
                 
                 
-                if sub_service == 'ec2' or sub_service == 'ebs_volume' or sub_service == 'ebs_snapshot' :
+                if sub_service == 'ec2' or sub_service == 'ebs_volume' or sub_service == 'ebs_snapshot' or sub_service == 'tgw' or sub_service == 'tgw_att':
                     if resource['action'] == '2':
                         client.create_tags(
                                         Resources=[resource['identifier']],
@@ -391,6 +391,50 @@ class classAWSConnector():
                                     ResourceId=resource['identifier'],
                                     TagKeys=[tags[0]['Key']]
                         )
+                        
+                        
+                elif sub_service == 'tfs':
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    Arn=resource['arn'],
+                                    Tags=tags
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    Arn=resource['arn'],
+                                    TagKeys=[tags[0]['Key']]
+                        )
+                        
+                        
+                elif sub_service == 'api_gtw':
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    resourceArn=resource['arn'],
+                                    tags={ tags[0]['Key'] :  tags[0]['Value'] }
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    resourceArn=resource['arn'],
+                                    tagKeys=[tags[0]['Key']]
+                        )
+                        
+                
+                
+                elif sub_service == 'api_gtw_ws':
+                    if resource['action'] == '2':
+                        client.tag_resource(
+                                    ResourceArn=resource['arn'],
+                                    Tags={ tags[0]['Key'] :  tags[0]['Value'] }
+                        )
+                        
+                    elif resource['action'] == '4':
+                        client.untag_resource(
+                                    ResourceArn=resource['arn'],
+                                    TagKeys=[tags[0]['Key']]
+                        )
+                        
                 
         except Exception as err:
             self.logging.error(f'manage_tag_by_service :  {err}')
@@ -558,10 +602,30 @@ class classTagger():
                             ## ECS Resources
                             self.get_inventory_ecs_clusters(account['id'],region)
                             
-                            '''
-                            
                             ## EMR Resources
                             self.get_inventory_emr_clusters(account['id'],region)
+                            
+                            ## Transit Gateways Resources
+                            self.get_inventory_transit_gateways(account['id'],region)
+                            
+                            ## Transit Gateways Attachment Resources
+                            self.get_inventory_transit_gateway_attachments(account['id'],region)
+                            
+                            ## Transfer Family Resources
+                            self.get_inventory_transfer_family_servers(account['id'],region)
+                            
+                            ## Transfer Family Resources
+                            self.get_inventory_api_gateways(account['id'],region)
+                            
+                            '''
+                            
+                            ## Transfer Family Resources
+                            self.get_inventory_api_gateway_websockets(account['id'],region)
+                            
+                            
+                            
+                            
+                            
                             
                             
                             
@@ -615,6 +679,11 @@ class classTagger():
                         { "primary" : "eks", "secondary" : "eks" },
                         { "primary" : "ecs", "secondary" : "ecs" },
                         { "primary" : "emr", "secondary" : "emr" },
+                        { "primary" : "ec2", "secondary" : "tgw" },
+                        { "primary" : "ec2", "secondary" : "tgw_att" },
+                        { "primary" : "transfer", "secondary" : "tfs" },
+                        { "primary" : "apigateway", "secondary" : "api_gtw" },
+                        { "primary" : "apigatewayv2", "secondary" : "api_gtw_ws" },
                 ]
             
             # Create master tagging process
@@ -657,7 +726,6 @@ class classTagger():
     
     ###----| Function to validate tag exists
     def tag_exists(self,tags):
-        
         result = any(tag['Key'] == self.tag_key and tag['Value'] == self.tag_value for tag in tags)
         return result      
     
@@ -685,8 +753,13 @@ class classTagger():
         else:
             return False
         
-    
-    
+        
+    ###----| Function to get resource name
+    def get_resource_name_dict(self,tags):
+        return (tags.get("Name") if "Name" in tags else "")
+        
+        
+        
     ###----| Function to convert tag keys
     def tag_key_convertion(self,tags,key,value):
         tag_convertion = []
@@ -1369,6 +1442,186 @@ class classTagger():
         
         except Exception as err:
             self.logging.error(f'get_inventory_emr_clusters : {err}')
+    
+    
+    
+    
+    ####----| Function to get Transit Gateways Clusters
+    def get_inventory_transit_gateways(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"tgw"}')
+            client = self.aws.get_aws_client(region,"ec2")
+        
+            paginator = client.get_paginator('describe_transit_gateways')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('TransitGateways', [])
+                for resource in resource_list:
+                        create_time = resource['CreationTime']
+                        identifier = resource['TransitGatewayId']
+                        arn = resource['TransitGatewayArn']
+                        tags = resource.get("Tags")  if "Tags" in resource else []
+                        resource_name = self.get_resource_name(tags)
+                        if create_time and create_time >= self.start_date:
+                            if not self.tag_exists(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tgw", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tgw", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tgw", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_transit_gateways : {err}')
+    
+    
+    
+    
+    ####----| Function to get Transit Gateways Clusters
+    def get_inventory_transit_gateway_attachments(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"tgw_att"}')
+            client = self.aws.get_aws_client(region,"ec2")
+        
+            paginator = client.get_paginator('describe_transit_gateway_attachments')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('TransitGatewayAttachments', [])
+                for resource in resource_list:
+                        create_time = resource['CreationTime']
+                        identifier = resource['TransitGatewayAttachmentId']
+                        arn = resource['ResourceId']
+                        tags = resource.get("Tags")  if "Tags" in resource else []
+                        resource_name = self.get_resource_name(tags)
+                        if create_time and create_time >= self.start_date:
+                            if not self.tag_exists(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tgw_att", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tgw_att", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tgw_att", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_transit_gateway_attachments : {err}')
+            
+            
+            
+            
+    
+    ####----| Function to get Transfer Family 
+    def get_inventory_transfer_family_servers(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"tfs"}')
+            client = self.aws.get_aws_client(region,"transfer")
+        
+            paginator = client.get_paginator('list_servers')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('Servers', [])
+                for resource in resource_list:
+                        create_time = ""
+                        identifier = resource['ServerId']
+                        arn = resource['Arn']
+                        server_info = client.describe_server(ServerId=identifier)['Server']
+                        tags = server_info.get("Tags")  if "Tags" in server_info else []
+                        resource_name = self.get_resource_name(tags)
+                        if not self.tag_exists(tags):
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tfs", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time, "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "tfs", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time, "tags" : json.dumps(tags) })
+                    
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_transfer_family_servers : {err}')
+            
+            
+            
+            
+    
+    
+    ####----| Function to get API Gateways
+    def get_inventory_api_gateways(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"api_gtw"}')
+            client = self.aws.get_aws_client(region,"apigateway")
+        
+            paginator = client.get_paginator('get_rest_apis')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('items', [])
+                for resource in resource_list:
+                        create_time = resource['createdDate']
+                        identifier = resource['id']
+                        arn = f"arn:aws:apigateway:{region}::/restapis/{identifier}"
+                        tags = resource.get("tags")  if "tags" in resource else {}
+                        resource_name = self.get_resource_name_dict(tags)
+                        if create_time and create_time >= self.start_date:
+                            if not self.tag_exists_dict(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "api_gtw", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "api_gtw", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "api_gtw", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_api_gateways : {err}')
+            
+            
+            
+            
+    
+    
+    ####----| Function to get API Gateways Websocket
+    def get_inventory_api_gateway_websockets(self,account,region):
+        try:
+        
+            self.logging.info(f'Discovery # Account : {account}, Region : {region}, Service : {"api_gtw_ws"}')
+            client = self.aws.get_aws_client(region,"apigatewayv2")
+        
+            paginator = client.get_paginator('get_apis')
+            resources = []
+            for page in paginator.paginate():
+                resource_list = page.get('Items', [])
+                for resource in resource_list:
+                        create_time = resource['CreatedDate']
+                        identifier = resource['ApiId']
+                        arn = f"arn:aws:apigateway:{region}::/apis/{identifier}"
+                        tags = resource.get("Tags")  if "Tags" in resource else {}
+                        resource_name = self.get_resource_name_dict(tags)
+                        if create_time and create_time >= self.start_date:
+                            if not self.tag_exists_dict(tags):
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "api_gtw_ws", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                            else:
+                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "api_gtw_ws", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        else:
+                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "api_gtw_ws", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                        
+            #Recording resources
+            self.database.register_inventory_resources(resources)
+            
+        
+        except Exception as err:
+            self.logging.error(f'get_inventory_api_gateway_websockets : {err}')
+            
+            
     
     
     
