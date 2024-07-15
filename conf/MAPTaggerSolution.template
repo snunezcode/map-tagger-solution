@@ -368,6 +368,7 @@ Resources:
                     {
                       "Effect": "Allow",
                       "Action": [
+                        "apigateway:GET",
                         "apigateway:PATCH",
                         "apigateway:PUT",
                         "apigateway:DELETE",
