@@ -567,7 +567,6 @@ class classTagger():
                     for region in account['regions']:
                         if region in active_regions:
                             
-                            '''
                             ## EC2 Resources
                             self.get_inventory_ec2(account['id'],region)
                             
@@ -637,9 +636,7 @@ class classTagger():
                             ## Transfer Family Resources
                             self.get_inventory_api_gateway_websockets(account['id'],region)
                             
-                            '''
-                            
-                            ## Transfer Family Resources
+                            ## Workspaces Resources
                             self.get_inventory_workspaces(account['id'],region)
                             
                         else:
