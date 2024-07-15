@@ -463,8 +463,8 @@ function Application() {
                                                         options={[
                                                           { label: "Already tagged", value: 1 },
                                                           { label: "Skipped", value: 3 },
-                                                          { label: "Added", value: 2 },
-                                                          { label: "Removed", value: 4 }
+                                                          { label: "New", value: 2 },
+                                                          { label: "Remove tag", value: 4 }
                                                         ]}
                                                     />
                                                             
