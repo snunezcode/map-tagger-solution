@@ -50,18 +50,18 @@ var CryptoJS = require("crypto-js");
 
 function Application() {
     
-    //-- Application Messages
+    //-- Application messages
     const [applicationMessage, setApplicationMessage] = useState([]);
   
     var currentProcessId = useRef("");
     
-    //-- Add Header Cognito Token
+    //-- Add header cognito token
     Axios.defaults.headers.common['x-token-cognito'] = sessionStorage.getItem("x-token-cognito");
     Axios.defaults.withCredentials = true;
     
     const [txtAccountsField, setTxtAccountsField] = useState("");
    
-    //-- Handle Click Events
+    //-- Gather configuration
     async function gatherConfiguration (){
             try{
             const { data } = await Axios.get(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/configuration/get`);
@@ -75,6 +75,8 @@ function Application() {
         }
     };
     
+    
+    //-- Save configuration
     async function saveConfiguration (){
         try{
             
@@ -129,12 +131,11 @@ function Application() {
     
     
     
-    
+    //-- Convert to objects
     function convertToObjects(tagListString) {
       try {
         // Remove the outer parentheses and square brackets from the string
         const innerString = tagListString.slice(2, -2);
-        console.log(innerString);
         // Parse the inner string as a JSON array
         const jsonArray = JSON.parse(`[${innerString}]`);
     
@@ -152,7 +153,6 @@ function Application() {
     // eslint-disable-next-line
     useEffect(() => {
         gatherConfiguration();
-        
     }, []);
     
     

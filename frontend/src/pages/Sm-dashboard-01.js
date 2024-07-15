@@ -38,10 +38,10 @@ export const splitPanelI18nStrings: SplitPanelProps.I18nStrings = {
 
 
 
-function Login() {
+function Application() {
     
     
-    //-- Variable for Split Panels
+    //-- Variable for split panels
     const [splitPanelShow,setsplitPanelShow] = useState(false);
     
     // Metrics
@@ -51,7 +51,7 @@ function Login() {
       
     });
     
-    //-- Variables Table
+    //-- Variables table
     const columnsTableResources = [
                   {id: 'process_id',header: 'ProcessId',cell: item => item.process_id,ariaLabel: createLabelFunction('process_id'),sortingField: 'process_id',},
                   {id: 'inventory_start_date',header: 'Inventory Start',cell: item => item.inventory_start_date,ariaLabel: createLabelFunction('inventory_start_date'),sortingField: 'inventory_start_date',},
@@ -95,13 +95,13 @@ function Login() {
     const [itemsTableTags,setItemsTableTags] = useState([]);
     
     
-    //-- Current Process selected
+    //-- Current process selected
     var currentProcess = useRef({});
     const [visible, setVisible] = useState(false);
     var currentResource = useRef({});
     
     
-    //-- Add Header Cognito Token
+    //-- Add header cognito token
     Axios.defaults.headers.common['x-token-cognito'] = sessionStorage.getItem("x-token-cognito");
     Axios.defaults.withCredentials = true;
     
@@ -109,8 +109,6 @@ function Login() {
     //-- Filters
     const [filterType,setFilterType] = useState({ label: "Tagged", value: 1 });
     var currentType = useRef(1);
-    
-    
     
     
     
@@ -124,7 +122,6 @@ function Login() {
             setItemsTableResources(data.records);
             setGlobalMetrics({ summaryResources : data.summaryResources, summaryServices : data.summaryServices });
             setItemsTableResourcesDetails([]);
-            
             
         }
         catch{
@@ -157,11 +154,10 @@ function Login() {
     
     
     
-    //-- Function to Convert to Objects
+    //-- Function to convert to objects
     function convertToObjects(tagListString) {
       try {
-        console.log(tagListString);
-        
+     
         // Remove the outer parentheses and square brackets from the string
         var innerString = "";
         if (tagListString.substring(0,2) == "[[")
@@ -169,7 +165,6 @@ function Login() {
         else
           innerString = tagListString;
         
-        //console.log(innerString);
         // Parse the inner string as a JSON array
         const jsonArray = JSON.parse(`${innerString}`);
         if (Array.isArray(jsonArray))
@@ -249,11 +244,7 @@ function Login() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
-    useEffect(() => {
-        //gatherVersion();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    
+   
     
   return (
     <div style={{"background-color": "#f2f3f3"}}>
@@ -533,4 +524,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Application;

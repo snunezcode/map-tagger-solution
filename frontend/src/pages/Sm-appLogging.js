@@ -44,19 +44,19 @@ function Application() {
     const logId=params.get("logid");  
     
   
-    //-- Application Version
+    //-- Application version
     const [messages, setMessages] = useState([]);
     const [logFilesList, setLogFilesList] = useState([]);
     const [selectedOption,setSelectedOption] = useState({});
     var logFileName = useRef("");
   
-    //-- Add Header Cognito Token
+    //-- Add header cognito token
     Axios.defaults.headers.common['x-csrf-token'] = sessionStorage.getItem("x-csrf-token");
     Axios.defaults.headers.common['x-token-cognito'] = sessionStorage.getItem("x-token-cognito");
     Axios.defaults.withCredentials = true;
     
     
-    //-- Table Messages
+    //-- Table messages
     const columnsTable =  [
                   {id: 'message', header: 'Messages',cell: item => item.message,ariaLabel: createLabelFunction('message'),sortingField: 'message',}
     ];
@@ -64,7 +64,7 @@ function Application() {
     const visibleContent = ['message'];
     
    
-   //-- Gather Import Process
+   //-- Gather import process
    async function gatherApplicationLogfiles (){
       
       try {
@@ -74,7 +74,6 @@ function Application() {
             Axios.get(`${api_url}/api/aws/tagger/logging/list/files`,{
                       params: params, 
                   }).then((data)=>{
-                    console.log(data);
                     var logFiles = [];
                    
                     data.data.logFiles.forEach(file => {
@@ -115,6 +114,8 @@ function Application() {
     
     }
     
+    
+    //-- Gather log file content
     function gatherLogFileContent(){
       
         try {

@@ -134,10 +134,9 @@ function Application() {
     }
   
   
-    //-- Function to Convert to Objects
+    //-- Function to convert to objects
     function convertToObjects(tagListString) {
       try {
-        console.log(tagListString);
         
         // Remove the outer parentheses and square brackets from the string
         var innerString = "";
@@ -146,7 +145,6 @@ function Application() {
         else
           innerString = tagListString;
         
-        //console.log(innerString);
         // Parse the inner string as a JSON array
         const jsonArray = JSON.parse(`${innerString}`);
         if (Array.isArray(jsonArray))
@@ -173,8 +171,6 @@ function Application() {
             });
             sessionStorage.setItem("x-csrf-token", data.csrfToken );
             setResources({ records : data.records, summary : data.summary });
-            console.log(data);
-            
             
         }
         catch{
@@ -184,7 +180,7 @@ function Application() {
     
     
     
-    //-- Get Process Status
+    //-- Get process status
     function getProcessStatus(){
       
         if ( currentStep.current == 0 || currentStep.current == 2) {
@@ -213,7 +209,7 @@ function Application() {
     }
     
    
-   //-- Start Discovery Process
+   //-- Start discovery process
    async function startDiscovery(){
       
         try {
@@ -221,15 +217,12 @@ function Application() {
             currentProcessId.current =  ((new Date().toISOString().replace("T",".").substring(0, 19)).replaceAll(":","")).replaceAll("-","");
             inventoryState.current = "Started";
             var params = { processType : "inventory", processId : currentProcessId.current };
-            console.log(currentProcessId.current);
             const { data } = await Axios.get(`${configuration["apps-settings"]["api-url"]}/api/aws/tagger/process/start`,{
                       params: params, 
             });
             sessionStorage.setItem("x-csrf-token", data.csrfToken );
             processState.current = { inventoryStatus : 1, ...processState.current };
             setStatusChange(1);
-            console.log(data);
-           
             
         }
         catch{
@@ -242,7 +235,7 @@ function Application() {
     }
     
     
-    //-- Start Tagging Process
+    //-- Start tagging process
    async function startTagging(){
       
         try {
@@ -292,24 +285,17 @@ function Application() {
     }
   
   
-    //-- Goto Dashboard
+    //-- Goto dashboard
     function gotoDashboard(){
         navigate('/dashboard');
     }
     
     
-    useEffect(() => {
-        //gatherApplicationLogfiles();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    
-    
+   
     useEffect(() => {
         const id = setInterval(getProcessStatus, configuration["apps-settings"]["refresh-interval-tagging-process"]);
         return () => clearInterval(id);
     }, []);
-    
-    
     
     
     

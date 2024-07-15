@@ -37,18 +37,18 @@ export const splitPanelI18nStrings: SplitPanelProps.I18nStrings = {
 
 function Application() {
   
-    //-- Application Version
+    //-- Application version
     const [versionMessage, setVersionMessage] = useState([]);
     const [messages, setMessages] = useState([]);
     const [updateStatus, setUpdateStatus] = useState({ status : "", releaseVersion : "-", releaseDate : "-" });
   
-    //-- Add Header Cognito Token
+    //-- Add header cognito token
     Axios.defaults.headers.common['x-csrf-token'] = sessionStorage.getItem("x-csrf-token");
     Axios.defaults.headers.common['x-token-cognito'] = sessionStorage.getItem("x-token-cognito");
     Axios.defaults.withCredentials = true;
     
     
-    //-- Table Messages
+    //-- Table messages
     const columnsTable =  [
                   {id: 'timestamp', header: 'Timestamp',cell: item => item['timestamp'],ariaLabel: createLabelFunction('timestamp'),sortingField: 'timestamp', width: 230,},
                   {id: 'message', header: 'Messages',cell: item => item['message'],ariaLabel: createLabelFunction('message'),sortingField: 'message',}
@@ -57,7 +57,7 @@ function Application() {
     const visibleContent = ['timestamp','message'];
     
    
-   //-- Gather Import Process
+   //-- Gather import process
    async function gatherApplicationUpdateStatus (){
      
       var version = await gatherLocalVersion();
@@ -86,6 +86,8 @@ function Application() {
     
     }
     
+    
+    //-- Start update process
     function onClickUpdate(){
       
         try {
@@ -113,7 +115,7 @@ function Application() {
 
     }
     
-    //-- Function Gather App Version
+    //-- Function gather app version
    async function gatherVersion (){
 
         //-- Application Update

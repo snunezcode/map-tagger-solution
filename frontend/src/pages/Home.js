@@ -19,14 +19,14 @@ import '@aws-amplify/ui-react/styles.css';
 
 function Home() {
   
-  //-- Application Version
+  //-- Application version
   const [versionMessage, setVersionMessage] = useState([]);
   
   
-  //-- Call API to App Version
+  //-- Call API to app version
    async function gatherVersion (){
 
-        //-- Application Update
+        //-- Application update
         var appVersionObject = await applicationVersionUpdate({ codeId : "dbwcmp", moduleId: "home"} );
         
         if (appVersionObject.release > configuration["apps-settings"]["release"] ){
