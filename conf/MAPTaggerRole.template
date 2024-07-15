@@ -31,6 +31,7 @@ Resources:
                         "dynamodb:ListTagsOfResource",
                         "ec2:Describe*",
                         "ec2:CreateTags",
+                        "ec2:DeleteTags",
                         "ec2:DescribeVolumes",
                         "ec2:DescribeSnapshots",
                         "ec2:DescribeTransitGateways",
@@ -82,7 +83,21 @@ Resources:
                         "transfer:ListTagsForResource",
                         "transfer:TagResource",
                         "workspaces:DescribeWorkspaces",
-                        "workspaces:CreateTags"
+                        "workspaces:CreateTags",
+                        "rds:RemoveTagsFromResource",
+                        "elasticloadbalancing:RemoveTags",
+                        "elasticfilesystem:DeleteTags",
+                        "fsx:UntagResource",
+                        "dynamodb:UntagResource",
+                        "lambda:UntagResource",
+                        "backup:UntagResource",
+                        "ecr:UntagResource",
+                        "eks:UntagResource",
+                        "eks:DescribeCluster",
+                        "ecs:UntagResource",
+                        "elasticmapreduce:RemoveTags",
+                        "transfer:DescribeServer",
+                        "transfer:UntagResource"
                       ],
                       "Resource": "*"
                     }
