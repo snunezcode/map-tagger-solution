@@ -417,7 +417,7 @@ function Application() {
                             },
                             {
                               title: "Review resources",
-                              description: "Review resources discovered, defined which ones are part of MAP Program, this definition will be used by tagging process to tag your migrated resources with the key: map-migrated, and the value of the tag, that you provided for MAP Program.",
+                              description: "Review resources discovered, define which ones are part of MAP Program, this definition will be used by tagging process to tag your migrated resources with the key: map-migrated, and the value of the tag that you provided for MAP Program.",
                               content: (
                                 <Container
                                      header={
