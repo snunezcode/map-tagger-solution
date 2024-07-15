@@ -778,6 +778,18 @@ class classTagger():
 
 
 
+    ###----| Function to convert tags dict to list
+    def tags_dict_to_list(self,tags):
+        tag_convertion = []
+        for key, value in tags.items():
+            tag_convertion.append({ 'Key' : key, 'Value' : value })
+        return tag_convertion
+
+
+
+
+
+
     ####----| Function to get inventory for EC2 instances
     def get_inventory_ec2(self,account,region):
         try:
@@ -1196,40 +1208,42 @@ class classTagger():
                     response = client.list_buckets(**list_buckets_params)
                     marker = response.get('NextMarker')
                     buckets = response['Buckets']
-        
-                    for bucket in buckets:
-                        
-                        identifier = bucket['Name']
-                        resource_name = identifier
-                        arn = f'arn:aws:s3:::{identifier}'
-                        bucket_location = client.get_bucket_location(Bucket=identifier)
-                        bucket_region = bucket_location['LocationConstraint']
-                        if bucket_region is None:
-                            bucket_region = 'us-east-1'
-                        if bucket_region==region:
-                            try:
-                                tags = client.get_bucket_tagging(Bucket=identifier).get('TagSet', [])
-                            except botocore.exceptions.ClientError as e:
-                                tags = []
+                    try:
+                        for bucket in buckets:
                             
-                            create_time = bucket.get("CreationDate")
-                            
-                            if create_time and create_time >= self.start_date:
-                                if not self.tag_key_exists(tags):
-                                    tags.append({'Key': self.tag_key, 'Value': self.tag_value})
-                                    resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                                else:
-                                    if not self.tag_exists(tags):
-                                        # Remove tag
-                                        tags = [d for d in tags if d["Key"] != self.tag_key]
+                            identifier = bucket['Name']
+                            resource_name = identifier
+                            arn = f'arn:aws:s3:::{identifier}'
+                            bucket_location = client.get_bucket_location(Bucket=identifier)
+                            bucket_region = bucket_location['LocationConstraint']
+                            if bucket_region is None:
+                                bucket_region = 'us-east-1'
+                            if bucket_region==region:
+                                try:
+                                    tags = client.get_bucket_tagging(Bucket=identifier).get('TagSet', [])
+                                except botocore.exceptions.ClientError as e:
+                                    tags = []
+                                
+                                create_time = bucket.get("CreationDate")
+                                
+                                if create_time and create_time >= self.start_date:
+                                    if not self.tag_key_exists(tags):
                                         tags.append({'Key': self.tag_key, 'Value': self.tag_value})
                                         resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
                                     else:
-                                        resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                            else:
-                                resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
-                                
-        
+                                        if not self.tag_exists(tags):
+                                            # Remove tag
+                                            tags = [d for d in tags if d["Key"] != self.tag_key]
+                                            tags.append({'Key': self.tag_key, 'Value': self.tag_value})
+                                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "2", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                                        else:
+                                            resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "1", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                                else:
+                                    resources.append({ "process_id" : self.process_id, "account" : account, "region" : region, "service" : "s3", "type" : "3", "identifier" : identifier, "resource_name" : resource_name, "arn" : arn, "tag_key" : self.tag_key , "tag_value" : self.tag_value, "created" : create_time.strftime("%Y-%m-%d %H:%M:%S"), "tags" : json.dumps(tags) })
+                                                        
+                    except Exception as err:
+                        self.logging.error(f'get_inventory_s3 : {err}')
+                    
                     # Check if there are more buckets to list, if not, exit the loop
                     if not marker:
                         break
