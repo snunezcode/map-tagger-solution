@@ -12,6 +12,7 @@ server/credentials.json
 test/
 frontend/package-lock.json
 server/package-lock.json
+archiving/
 # Logs
 logs
 *.log

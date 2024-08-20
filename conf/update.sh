@@ -4,9 +4,12 @@ source $HOME/.bash_profile
 
 #Clone Repository
 cd /tmp
-sudo rm -rf map-tagger-solution
-git clone https://github.com/GitHubRepository/map-tagger-solution.git
-cd map-tagger-solution
+sudo rm -rf map-tagger-solution-master
+#git clone https://github.com/GitHubRepository/map-tagger-solution.git
+wget CodeRepository/map-tagger-solution-master.zip
+unzip map-tagger-solution-master.zip
+
+cd map-tagger-solution-master
 cp /aws/apps/server/configuration.json server/
 sudo cp -r server frontend agent /aws/apps
 
