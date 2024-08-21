@@ -40,16 +40,17 @@ Metadata:
       SubnetParam: 
         default: "Select Subnet for Application Deployment, this subnet needs internet outbound access to reach AWS APIs."
       PublicAccess: 
-        default: "The deployment will assign private IP Address by default to access the application, you can assign Public IP Address to access the application in case you need it, Select (true) to assign Public IP Address."
+        default: "The deployment will assign a private IP address to the application by default. If you need to access the application publicly, you can choose to assign a public IP address instead. Select 'true' to assign a public IP address."
       SGInboundAccess: 
         default: "Specify CIDR inbound access rule, this will grant network access for the application."
       GitHubRepository:
         default: "AWS Github Repository source used for deployment."
       ApplicationUpdateEnabled:
-        default: "Disclaimer : This Application could able to verify new versions, it will help to keep update with most popular features. Customer can review the code and validate data scope. Selecting (true) I acknowledge that this Application will access to url to verify new versions."
+        default: "Disclaimer: This application can check for new versions and inform you about available updates. This will help keep you up-to-date with the most popular features. Customers can review the code and validate the data scope. By selecting 'true', you acknowledge that this application will access a URL to check for new versions."
       ApplicationUpdateUrl:
         default: "URL used to verify new application versions."
       
+    
     
 Parameters:
 
@@ -68,7 +69,7 @@ Parameters:
 
   Username:
       Type: String
-      Description: Username (email)
+      Description: Email
       AllowedPattern: "\\w[-\\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\\.)+[A-Za-z]{2,14}"
 
   InstanceType:
