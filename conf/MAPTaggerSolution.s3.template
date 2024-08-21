@@ -96,7 +96,7 @@ Parameters:
   CodeRepository:
       Type: String
       Description: Code Repository
-      Default: https://map-tagger-solution-pilot.s3.amazonaws.com/
+      Default: map-tagger.s3.amazonaws.com
   
   ApplicationUpdateUrl:
       Type: String
@@ -214,16 +214,17 @@ Resources:
                     cd /tmp
                     sudo yum install -y git
                     #git clone https://github.com/${CodeRepository}/map-tagger-solution.git
-                    wget ${CodeRepository}/map-tagger-solution-master.zip
+                    wget https://${CodeRepository}/map-tagger-solution-master.zip
                     unzip map-tagger-solution-master.zip
                     cd map-tagger-solution-master
                     sudo cp -r server frontend conf agent /aws/apps
                     
                     echo '{ "aws_region": "${AWS::Region}","aws_cognito_user_pool_id": "${CognitoUserPool}","aws_cognito_user_pool_web_client_id": "${CognitoUserPoolClient}","aws_api_port": 3000,  "aws_token_expiration":24, "aws_application_update_url" : "${ApplicationUpdateUrl}", "aws_application_update_enabled" : "${ApplicationUpdateEnabled}" }' > /aws/apps/conf/aws-exports.json
                     cd /aws/apps
+                    
                     sudo -u ec2-user sh conf/setup.sh 2>&1 | tee /tmp/setup.log
                     
-                    sudo sed -i 's/CodeRepository/${CodeRepository}/g' /aws/apps/conf/update.sh
+                    sudo sed -i "s/CodeRepository/${CodeRepository}/g" /aws/apps/conf/update.sh
                     
             Tags: 
               - 

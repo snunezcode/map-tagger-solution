@@ -1,6 +1,7 @@
 conf/run.sh
 conf/run-public.sh
 conf/run-policy.sh
+conf/run-s3.sh
 conf/sync-int.sh
 conf/*.log
 demo/
