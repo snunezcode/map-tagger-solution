@@ -5,7 +5,7 @@ start_time=$(date +%s)
 echo "`date '+%H:%M:%S'` -  ## MAP Tagger Solution Solution - Creating AWS Cloudformation StackID : $id "
 
 
-aws cloudformation create-stack --stack-name "map-tagger-solution-$id" --template-body file://MAPTaggerSolution.s3.template --parameters ParameterKey=Username,ParameterValue=snmatus@amazon.com ParameterKey=VPCParam,ParameterValue=vpc-07d80a425057895a3 ParameterKey=SubnetParam,ParameterValue=subnet-03bff4b2b43b0d393 ParameterKey=InstanceType,ParameterValue=t3a.medium ParameterKey=PublicAccess,ParameterValue=true ParameterKey=SGInboundAccess,ParameterValue=0.0.0.0/0 ParameterKey=CodeRepository,ParameterValue=map-tagger.s3.amazonaws.com --region us-east-1 --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation create-stack --stack-name "map-tagger-solution-$id" --template-body file://MAPTaggerSolution.s3.template --parameters ParameterKey=Username,ParameterValue=snmatus@amazon.com ParameterKey=VPCParam,ParameterValue=vpc-07d80a425057895a3 ParameterKey=SubnetParam,ParameterValue=subnet-03bff4b2b43b0d393 ParameterKey=InstanceType,ParameterValue=t3a.medium ParameterKey=PublicAccess,ParameterValue=true ParameterKey=SGInboundAccess,ParameterValue=0.0.0.0/0 ParameterKey=CodeRepository,ParameterValue=https://map-tagger.s3.amazonaws.com --region us-east-1 --capabilities CAPABILITY_NAMED_IAM
 aws cloudformation wait stack-create-complete --stack-name "map-tagger-solution-$id" --region us-east-1
 
 

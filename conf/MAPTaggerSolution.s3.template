@@ -96,7 +96,7 @@ Parameters:
   CodeRepository:
       Type: String
       Description: Code Repository
-      Default: map-tagger.s3.amazonaws.com
+      Default: https://map-tagger.s3.amazonaws.com
   
   ApplicationUpdateUrl:
       Type: String
@@ -213,8 +213,8 @@ Resources:
                     
                     cd /tmp
                     sudo yum install -y git
-                    #git clone https://github.com/${CodeRepository}/map-tagger-solution.git
-                    wget https://${CodeRepository}/map-tagger-solution-master.zip
+                    
+                    wget ${CodeRepository}/map-tagger-solution-master.zip
                     unzip map-tagger-solution-master.zip
                     cd map-tagger-solution-master
                     sudo cp -r server frontend conf agent /aws/apps
@@ -224,7 +224,7 @@ Resources:
                     
                     sudo -u ec2-user sh conf/setup.sh 2>&1 | tee /tmp/setup.log
                     
-                    sudo sed -i "s/CodeRepository/${CodeRepository}/g" /aws/apps/conf/update.sh
+                    sudo sed -i "s~CodeRepository~${CodeRepository}~g" /aws/apps/conf/update.sh
                     
             Tags: 
               - 
