@@ -2,7 +2,7 @@ import json
 
 ####----| Info method
 def info():
-    return (json.dumps({ "id" : "m020", "service" : "apigateway", "sub_service" : "apigateway", "description" : "AWS Service API Gateway", "version" : "1.0.0", "date" : "2024-09-10" }))
+    return (json.dumps({ "id" : "m001", "service" : "apigateway", "sub_service" : "apigateway", "description" : "AWS Service API Gateway", "version" : "1.0.0", "date" : "2024-09-10" }))
 
 
 ####----| Init method

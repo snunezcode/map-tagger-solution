@@ -2,7 +2,7 @@ import json
 
 ####----| Info method
 def info():
-    return (json.dumps({ "id" : "m001", "service" : "fsx", "sub_service" : "fsx", "description" : "AWS Service FSX", "version" : "1.0.0", "date" : "2024-09-10" }))
+    return (json.dumps({ "id" : "m015", "service" : "fsx", "sub_service" : "fsx", "description" : "AWS Service FSX", "version" : "1.0.0", "date" : "2024-09-10" }))
 
 
 ####----| Init method

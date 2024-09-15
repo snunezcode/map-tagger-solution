@@ -2,7 +2,7 @@ import json
 
 ####----| Info method
 def info():
-    return (json.dumps({ "id" : "m018", "service" : "emr", "sub_service" : "emr", "description" : "AWS Service EC2", "version" : "1.0.0", "date" : "2024-09-10" }))
+    return (json.dumps({ "id" : "m014", "service" : "emr", "sub_service" : "emr", "description" : "AWS Service EC2", "version" : "1.0.0", "date" : "2024-09-10" }))
 
 
 ####----| Init method
