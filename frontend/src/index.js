@@ -21,7 +21,7 @@ import SmSettings01 from "./pages/Sm-settings-01";
 import SmAppUpdate from "./pages/Sm-appUpdate";
 import SmAppLogging from "./pages/Sm-appLogging";
 import SmAppTagging from "./pages/Sm-appTagging";
-
+import SmAppPlugins from "./pages/Sm-plugins-01";
 
 
 //-- Components
@@ -66,6 +66,7 @@ Axios.get(`/aws-exports.json`,).then((data)=>{
                     <Route path="/updates" element={<ProtectedApp><SmAppUpdate /> </ProtectedApp>} />
                     <Route path="/logging/" element={<ProtectedApp><SmAppLogging /> </ProtectedApp>} />
                     <Route path="/tagging/" element={<ProtectedApp><SmAppTagging /> </ProtectedApp>} />
+                    <Route path="/plugins/" element={<ProtectedApp><SmAppPlugins /> </ProtectedApp>} />
                 </Routes>
               </BrowserRouter>
           </Authenticator.Provider>

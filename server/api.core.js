@@ -7,6 +7,7 @@ var dataObjectStore = new classDataStore();
 var taggerProcessObject = new classTaggerProcess();
 var configurationObject = new classConfiguration();
 
+const multer = require('multer');
 const fs = require('fs');
 const express = require("express");
 const cors = require('cors');
@@ -158,6 +159,33 @@ function verifyTokenCognito(token) {
     
 };
 
+
+//--################################################################################################################
+//--------------------------------------------  UPLOAD FILE
+//--################################################################################################################
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, '../agent/plugins/')
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname)
+  },
+})
+
+const upload = multer({ 
+    storage: storage ,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype == "text/x-python-script") {
+                cb(null, true);
+        } 
+        else {
+            cb(null, false);
+            return cb(new Error('Only .py format allowed!'));
+        }
+    }
+});
 
 
 //--################################################################################################################
@@ -457,6 +485,93 @@ app.get("/api/aws/tagger/logging/get/content", async (req, res) => {
         
         var logContent = taggerProcessObject.getLogfileContent(params.fileName);
         res.status(200).send({ csrfToken: req.csrfToken(), logContent : logContent } );
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({});
+    }
+});
+
+
+
+//--++ API : GENERAL : Upload plugins
+app.post('/api/aws/tagger/plugin/upload', upload.single('file'), function (req, res) {
+    
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+    
+    //console.log(req);
+    res.status(200).send({ "result" : "success"});
+    
+});
+
+
+
+
+//--++ API : GENERAL : List plugins
+app.get("/api/aws/tagger/plugin/list", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+    
+    try {
+        
+        var fileList = taggerProcessObject.getPluginList();
+        res.status(200).send({ csrfToken: req.csrfToken(), fileList : fileList } );
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({});
+    }
+});
+
+
+
+//--++ API : GENERAL : Delete plugin
+app.get("/api/aws/tagger/plugin/delete", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+    
+    const params = req.query;
+    
+    try {
+        
+        taggerProcessObject.deletePlugin(params.fileName);
+        res.status(200).send({ csrfToken: req.csrfToken(), "result" : "success" } );
+        
+    } catch(error) {
+        console.log(error);
+        res.status(401).send({});
+    }
+});
+
+
+
+//--++ API : GENERAL : View plugin
+app.get("/api/aws/tagger/plugin/view", async (req, res) => {
+
+    // Token Validation
+    var cognitoToken = verifyTokenCognito(req.headers['x-token-cognito']);
+
+    if (cognitoToken.isValid === false)
+        return res.status(511).send({ data: [], message : "Token is invalid"});
+    
+    const params = req.query;
+    
+    try {
+        
+        var fileContent = taggerProcessObject.viewPlugin(params.fileName);
+        res.status(200).send({ csrfToken: req.csrfToken(), fileContent : fileContent } );
         
     } catch(error) {
         console.log(error);

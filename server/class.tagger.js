@@ -11,6 +11,7 @@ class classTaggerProcess {
         logging = [];
         status = "non-started"
         applicationDirectory = "/aws/apps/agent/";
+        pluginDirectory = "/aws/apps/agent/plugins/";
         scriptCommand = "sudo -u ec2-user sh /aws/apps/agent/run.sh "
         constructor(object) { 
             
@@ -65,6 +66,9 @@ class classTaggerProcess {
             return files.sort().reverse();
         }
         
+        
+        
+        
         //-- Read log fiile
         getLogfileContent(fileName){
             var logContent = [];
@@ -76,6 +80,52 @@ class classTaggerProcess {
             
             return logContent;
             
+        }
+        
+        
+        //-- Get plugin list
+        getPluginList(){
+            var fileList = [];
+            try {
+                
+                const files = fs.readdirSync(this.pluginDirectory);
+                for (let file of files) {
+                    if (file.substr(file.length - 3) == ".py"){
+                        const fileInfo = fs.statSync(this.pluginDirectory + file);
+                        fileList.push({ name: file, size : fileInfo.size, date : fileInfo.ctime });
+                    }
+                }
+                return(fileList);
+                
+            } catch (err) {
+                console.error(err);
+            }
+            
+            return fileList;
+            
+        }
+        
+        
+        //-- Delete plugin 
+        deletePlugin(fileName){
+            try {
+                fs.unlinkSync(this.pluginDirectory + fileName);
+            } catch (err) {
+                console.error(err);
+            }
+            
+        }
+        
+        
+        //-- View plugin 
+        viewPlugin(fileName){
+            var fileContent = [];
+            try {
+                fileContent = fs.readFileSync(this.pluginDirectory + fileName, 'utf8').toString();
+            } catch (err) {
+                console.error(err);
+            }
+            return fileContent;
         }
         
         

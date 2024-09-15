@@ -88,8 +88,8 @@ function Application() {
     
     
     //-- Filters
-    const [filterType,setFilterType] = useState({ label: "Tagged", value: 1 });
-    var currentType = useRef(1);
+    const [filterType,setFilterType] = useState({ label: "New", value: 2 });
+    var currentType = useRef(2);
     
     //-- Table Variables
     const columnsTable = [
